@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PasswordInput } from '@/components/password-input';
 import { SocialAuthButton } from '@/components/social-auth-button';
 import { BrandColors } from '@/constants/theme';
 
@@ -77,13 +78,8 @@ export function SignInView({
               onChangeText={setEmail}
             />
 
-            <TextInput
-              style={styles.input}
+            <PasswordInput
               placeholder="Password"
-              placeholderTextColor="#8E95A0"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
               value={password}
               onChangeText={setPassword}
             />
