@@ -28,9 +28,17 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#38679B",
+          "image": "./assets/brand/icon.png",
+          "imageWidth": 80
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Shotly needs access to your photo library to find and organise your screenshots on-device.",
+          "savePhotosPermission": "Shotly needs permission to save screenshots to your gallery.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],

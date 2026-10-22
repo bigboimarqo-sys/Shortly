@@ -1,47 +1,61 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
-  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { BrandLogo } from '@/components/brand-logo';
-import { HintRow } from '@/components/hint-row';
+import { TabName } from '@/components/bottom-tab-bar';
+import { CollectionsView } from '@/components/collections-view';
+import { LibraryView } from '@/components/library-view';
+import { MainHomeView } from '@/components/main-home-view';
 import { OnboardingCarousel } from '@/components/onboarding-carousel';
+import { PermissionsView } from '@/components/permissions-view';
+import { SettingsView } from '@/components/settings-view';
 import { SignInView } from '@/components/sign-in-view';
 import { SignUpView } from '@/components/sign-up-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, BrandColors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BrandColors } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
 
-type FlowView = 'onboarding' | 'signup' | 'signin' | 'main';
+type FlowView = 'onboarding' | 'signup' | 'signin' | 'permissions' | 'main';
 
-export default function HomeScreen() {
-  const { user, userType, isAuthenticated, isLoading, signOut } = useAuth();
+export default function RootIndexScreen() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isGranted, isLoading: permissionsLoading } = usePhotoPermissions();
+
   const [currentView, setCurrentView] = useState<FlowView>('onboarding');
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const [activeTab, setActiveTab] = useState<TabName>('Home');
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // If already authenticated and user hasn't explicitly navigated to a preview, show main app
-  const showMainApp = isAuthenticated || currentView === 'main';
+  useEffect(() => {
+    if (authLoading || permissionsLoading) return;
 
-  if (isLoading) {
+    if (!hasInitialized) {
+      if (isAuthenticated) {
+        if (!isGranted) {
+          setCurrentView('permissions');
+        } else {
+          setCurrentView('main');
+        }
+      } else if (isGranted) {
+        // User already configured permissions in past session
+        setCurrentView('main');
+      }
+      setHasInitialized(true);
+    }
+  }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized]);
+
+  if (authLoading || permissionsLoading) {
     return (
-      <View style={[styles.fullScreen, styles.loadingContainer]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={BrandColors.primary} />
       </View>
     );
   }
 
-  // 1. Onboarding Carousel (Splash & Onboarding slides - matching 1 Splash.png & 2 Onboarding.png)
-  if (!showMainApp && currentView === 'onboarding') {
+  // 1. Onboarding Carousel (matching 1 Splash.png & 2 Onboarding.png)
+  if (currentView === 'onboarding') {
     return (
       <View style={styles.fullScreen}>
         <OnboardingCarousel
@@ -53,13 +67,25 @@ export default function HomeScreen() {
   }
 
   // 2. Sign Up Screen (matching 3 Sign up.png)
-  if (!showMainApp && currentView === 'signup') {
+  if (currentView === 'signup') {
     return (
       <View style={styles.fullScreen}>
         <SignUpView
           onSignInPress={() => setCurrentView('signin')}
-          onContinueWithoutAccount={() => setCurrentView('main')}
-          onSuccess={() => setCurrentView('main')}
+          onContinueWithoutAccount={() => {
+            if (!isGranted) {
+              setCurrentView('permissions');
+            } else {
+              setCurrentView('main');
+            }
+          }}
+          onSuccess={() => {
+            if (!isGranted) {
+              setCurrentView('permissions');
+            } else {
+              setCurrentView('main');
+            }
+          }}
           onBack={() => setCurrentView('onboarding')}
         />
       </View>
@@ -67,173 +93,106 @@ export default function HomeScreen() {
   }
 
   // 3. Sign In Screen (matching 4 Sign in.png)
-  if (!showMainApp && currentView === 'signin') {
+  if (currentView === 'signin') {
     return (
       <View style={styles.fullScreen}>
         <SignInView
           onSignUpPress={() => setCurrentView('signup')}
-          onContinueWithoutAccount={() => setCurrentView('main')}
-          onSuccess={() => setCurrentView('main')}
+          onContinueWithoutAccount={() => {
+            if (!isGranted) {
+              setCurrentView('permissions');
+            } else {
+              setCurrentView('main');
+            }
+          }}
+          onSuccess={() => {
+            if (!isGranted) {
+              setCurrentView('permissions');
+            } else {
+              setCurrentView('main');
+            }
+          }}
           onBack={() => setCurrentView('onboarding')}
         />
       </View>
     );
   }
 
-  // 4. Main App Overview
+  // 4. Permissions Screen (matching 5 Permissions.png)
+  if (currentView === 'permissions') {
+    return (
+      <View style={styles.fullScreen}>
+        <PermissionsView
+          onAllowAccess={() => {
+            setCurrentView('main');
+            setActiveTab('Home');
+          }}
+          onSelectPhotosOnly={() => {
+            setCurrentView('main');
+            setActiveTab('Home');
+          }}
+          onComplete={() => {
+            setCurrentView('main');
+            setActiveTab('Home');
+          }}
+        />
+      </View>
+    );
+  }
+
+  // 5. Main App with Bottom Navigation Bar (matching 6 Home.png, Library.png, Collections.png, Settings.png)
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <BrandLogo height={44} style={styles.brandLogo} />
-          <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
-            On-device screenshot scanner &amp; search
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          theme: {isDark ? 'dark (watermark dark)' : 'light (watermark)'}
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Account Status"
-            hint={
-              <ThemedText type="code">
-                {isAuthenticated ? 'Signed In (Supabase)' : 'Guest (No account)'}
-              </ThemedText>
+    <View style={styles.fullScreen}>
+      {activeTab === 'Home' && (
+        <MainHomeView
+          onTabChange={setActiveTab}
+          onSearchPress={(query) => {
+            setActiveTab('Library');
+          }}
+          onReviewPress={() => {
+            setActiveTab('Library');
+          }}
+          onCollectionPress={(name) => {
+            if (name !== 'All') {
+              setActiveTab('Collections');
             }
-          />
-          {isAuthenticated && (
-            <>
-              <HintRow
-                title="User Email"
-                hint={<ThemedText type="code">{user?.email || 'N/A'}</ThemedText>}
-              />
-              <HintRow
-                title="user_type"
-                hint={<ThemedText type="code">{userType || 'user'}</ThemedText>}
-              />
-            </>
-          )}
-          <HintRow
-            title="Session Storage"
-            hint={<ThemedText type="code">AsyncStorage (Synced)</ThemedText>}
-          />
-        </ThemedView>
+          }}
+        />
+      )}
 
-        {isAuthenticated ? (
-          <Pressable
-            onPress={async () => {
-              await signOut();
-              setCurrentView('onboarding');
-            }}
-            style={({ pressed }) => [styles.actionButton, styles.signOutButton, pressed && { opacity: 0.8 }]}>
-            <ThemedText type="smallBold" style={styles.signOutText}>
-              Sign Out
-            </ThemedText>
-          </Pressable>
-        ) : (
-          <View style={styles.guestActionRow}>
-            <Pressable
-              onPress={() => setCurrentView('signin')}
-              style={({ pressed }) => [styles.actionButton, styles.signInButton, pressed && { opacity: 0.8 }]}>
-              <ThemedText type="smallBold" style={styles.signInText}>
-                Sign In
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => setCurrentView('onboarding')}
-              style={({ pressed }) => [styles.actionButton, styles.replayButton, pressed && { opacity: 0.8 }]}>
-              <ThemedText type="smallBold" style={styles.replayText}>
-                View Onboarding
-              </ThemedText>
-            </Pressable>
-          </View>
-        )}
+      {activeTab === 'Library' && (
+        <LibraryView onTabChange={setActiveTab} />
+      )}
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {activeTab === 'Collections' && (
+        <CollectionsView
+          onTabChange={setActiveTab}
+          onNewCollection={() => {
+            // New collection action
+          }}
+        />
+      )}
+
+      {activeTab === 'Settings' && (
+        <SettingsView
+          onTabChange={setActiveTab}
+          onNavigateToPermissions={() => setCurrentView('permissions')}
+          onSignOutComplete={() => setCurrentView('onboarding')}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
+    backgroundColor: BrandColors.paper,
   },
   loadingContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: BrandColors.paper,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.two,
-  },
-  brandLogo: {
-    marginTop: Spacing.two,
-  },
-  subtitle: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-  },
-  guestActionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  actionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  replayButton: {
-    backgroundColor: '#EDEAE1',
-  },
-  replayText: {
-    color: BrandColors.primary,
-  },
-  signInButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  signInText: {
-    color: '#FFFFFF',
-  },
-  signOutButton: {
-    backgroundColor: '#FDE8E8',
-    marginTop: 8,
-    width: '100%',
-  },
-  signOutText: {
-    color: '#E02424',
   },
 });

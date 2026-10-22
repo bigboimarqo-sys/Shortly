@@ -1,16 +1,9 @@
-import {
-  Tabs,
-  TabSlot,
-} from 'expo-router/ui';
+import { Slot } from 'expo-router';
 import React from 'react';
 
 /**
- * On web, AppTabs renders the active route cleanly without floating headers.
+ * On web, AppTabs delegates directly to Slot with zero unwanted floating headers.
  */
 export default function AppTabs() {
-  return (
-    <Tabs>
-      <TabSlot style={{ height: '100%', width: '100%' }} />
-    </Tabs>
-  );
+  return <Slot />;
 }
