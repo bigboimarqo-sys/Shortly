@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150" fill="none">
+  <rect width="150" height="150" rx="36" fill="#FFFFFF"/>
+  <!-- Top-left bracket -->
+  <path d="M 37 60 V 50 C 37 43 43 37 50 37 H 60" stroke="#38679B" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Top-right bracket -->
+  <path d="M 90 37 H 100 C 107 37 113 43 113 50 V 60" stroke="#38679B" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bottom-left bracket -->
+  <path d="M 37 90 V 100 C 37 107 43 113 50 113 H 60" stroke="#38679B" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bottom-right bracket -->
+  <path d="M 90 113 H 100 C 107 113 113 107 113 100 V 90" stroke="#38679B" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 3 Center scanning text bars -->
+  <rect x="54" y="58" width="42" height="7.5" rx="3.75" fill="#38679B"/>
+  <rect x="54" y="71.5" width="42" height="7.5" rx="3.75" fill="#38679B"/>
+  <rect x="54" y="85" width="26" height="7.5" rx="3.75" fill="#38679B"/>
+</svg>
