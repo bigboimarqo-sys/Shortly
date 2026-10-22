@@ -9,6 +9,7 @@ Read this first. It is the entry point for AI coding agents and developers.
 |---|---|
 | docs/PRODUCT.md | Product, users, value, launch, business context |
 | docs/FEATURES.md | MVP features and scope (v1.0) |
+| docs/DESIGN_MVP.md | Master MVP design spec: all 19 designs, flows, sheets, copy, accessibility |
 | docs/SCREENS.md | The 12 screens, states, flows, links to designs |
 | docs/DESIGN_SYSTEM.md | Colours, type, spacing, components, logo, accessibility |
 | docs/ARCHITECTURE.md | Stack, pipeline, folders, rules, platform notes |
@@ -25,8 +26,8 @@ Read this first. It is the entry point for AI coding agents and developers.
 If code and docs disagree, ask the product owner. Do not change scope silently.
 
 ## Designs
-- Screen designs (12 MVP screens, light mode): https://claude.ai/artifact/WgogXiWNhU7rbSfezQYKmB
-- Not yet designed: dark mode, Clean-Up swipe review, empty and error states, widgets, app icon sizes. Build these from docs/DESIGN_SYSTEM.md and flag them for review.
+- Screen designs (19 MVP designs incl. Splash, Sign in/up and Settings sheets, light mode): https://claude.ai/artifact/WgogXiWNhU7rbSfezQYKmB
+- Not yet designed: dark mode, Clean-Up swipe review, Categories and About screens, forgot-password, empty and error states, widgets, app icon sizes (full list in docs/DESIGN_MVP.md). Build these from docs/DESIGN_SYSTEM.md and flag them for review.
 - Investor deck (context only): https://claude.ai/artifact/X5VesyhcT6gbrgMVMoTNA8
 
 ## Brand quick reference
@@ -36,7 +37,7 @@ If code and docs disagree, ask the product owner. Do not change scope silently.
 - Never hard-code colours, sizes or fonts; use the tokens.
 
 ## Stack (proposed defaults; confirm before scaffolding)
-Flutter and Dart, Riverpod, go_router, Drift (SQLite with FTS5), photo_manager, ML Kit OCR (Android) and Apple Vision (iOS), local_auth, RevenueCat, PostHog and Crashlytics. Backend (Supabase) only from v1.2.
+Flutter and Dart, Riverpod, go_router, Drift (SQLite with FTS5), photo_manager, ML Kit OCR (Android) and Apple Vision (iOS), local_auth, RevenueCat, PostHog and Crashlytics. Authentication is needed in the MVP (sign in and sign up; the app must still work without an account). Cloud sync of screenshots only from v1.2.
 
 ## Hard rules
 1. **Privacy:** images and OCR text stay on the device. No SDK may receive screenshot content. Never log OCR text or file names.
@@ -48,7 +49,7 @@ Flutter and Dart, Riverpod, go_router, Drift (SQLite with FTS5), photo_manager, 
 7. **Performance:** OCR under 1.5s per image (mid-range Android), 60fps at 10,000 items, supports Android 8+ and iOS 15+.
 
 ## MVP scope (v1.0)
-In: auto-capture, bulk import, share-sheet import, OCR search, 10 categories, Collections and tags, Clean-Up, Private Vault, Settings, Paywall with 7-day trial, Free limits (500 screenshots, 3 Collections).
+In: splash, sign in and sign up (optional), auto-capture, bulk import, share-sheet import, OCR search, 10 categories, Collections and tags, Clean-Up, Private Vault, Settings, Paywall with 7-day trial, Free limits (500 screenshots, 3 Collections).
 Out until later: Receipt Tracker and Smart Actions (v1.1), Cloud Sync, Pro, natural-language search (v1.2), Team (v2.0), Account and Sync screen.
 
 ## Conventions

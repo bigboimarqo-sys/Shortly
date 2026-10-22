@@ -7,20 +7,33 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const BrandColors = {
+  primary: '#38679B',
+  textOnDark: '#7FA6D1',
+  ink: '#14181F',
+  paper: '#F6F4EE',
+  surface: '#FFFFFF',
+  darkCard: '#222A35',
+  muted: '#5D646C',
+  border: '#E0DDD3',
+} as const;
+
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    brand: BrandColors.primary,
+    text: BrandColors.ink,
+    background: BrandColors.paper,
+    backgroundElement: '#EDEAE1',
+    backgroundSelected: BrandColors.border,
+    textSecondary: BrandColors.muted,
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    brand: BrandColors.primary,
+    text: BrandColors.paper,
+    background: BrandColors.ink,
+    backgroundElement: BrandColors.darkCard,
+    backgroundSelected: '#2F3845',
+    textSecondary: BrandColors.textOnDark,
   },
 } as const;
 
