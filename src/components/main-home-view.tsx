@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import React, { useEffect, useState } from 'react';
 import {
   Platform,
@@ -48,9 +48,9 @@ export function MainHomeView({
     const fetchRecentPhotos = async () => {
       if (Platform.OS === 'web' || !isGranted) return;
       try {
-        const result = await (MediaLibrary as any).getAssetsAsync({
+        const result = await MediaLibrary.getAssetsAsync({
           first: 4,
-          mediaType: 'photo',
+          mediaType: MediaLibrary.MediaType.photo,
         });
         if (isMounted && result?.assets && result.assets.length > 0) {
           setRecentAssets(

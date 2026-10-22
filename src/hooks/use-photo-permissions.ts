@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -19,24 +19,24 @@ export function usePhotoPermissions() {
         setStatus(stored as PhotoPermissionStatus);
       }
 
-      // 2. On native platforms, query expo-media-library directly
+      // 2. On native platforms, query expo-media-library with granular 'photo' permission
       if (Platform.OS !== 'web') {
-        const response = await MediaLibrary.getPermissionsAsync();
-        const accessPrivileges = (response as any).accessPrivileges;
+        // Specifying ['photo'] prevents Android from requesting undeclared AUDIO permission
+        const response = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+        const accessPrivileges = response.accessPrivileges;
+
         if (response.granted) {
           const newStatus: PhotoPermissionStatus =
             accessPrivileges === 'limited' ? 'limited' : 'granted';
           setStatus(newStatus);
           await AsyncStorage.setItem(PERMISSION_STORAGE_KEY, newStatus);
         } else if (response.status === 'denied') {
-          // If explicitly denied in OS
           if (stored !== 'granted' && stored !== 'limited') {
             setStatus('denied');
             await AsyncStorage.setItem(PERMISSION_STORAGE_KEY, 'denied');
           }
         }
       } else {
-        // On web, if stored is set, keep it; else keep undetermined
         if (!stored) {
           setStatus('undetermined');
         }
@@ -62,9 +62,10 @@ export function usePhotoPermissions() {
         return 'granted';
       }
 
-      const response = await MediaLibrary.requestPermissionsAsync(false);
+      // Request explicitly only 'photo' permission
+      const response = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
       let newStatus: PhotoPermissionStatus = 'denied';
-      const accessPrivileges = (response as any).accessPrivileges;
+      const accessPrivileges = response.accessPrivileges;
 
       if (response.granted) {
         newStatus = accessPrivileges === 'limited' ? 'limited' : 'granted';
@@ -79,7 +80,6 @@ export function usePhotoPermissions() {
       return newStatus;
     } catch (err) {
       console.warn('Error requesting full photo access:', err);
-      // Fallback to granted so user flow is not permanently stuck
       await AsyncStorage.setItem(PERMISSION_STORAGE_KEY, 'granted');
       setStatus('granted');
       return 'granted';
@@ -91,15 +91,14 @@ export function usePhotoPermissions() {
   const requestLimitedAccess = async (): Promise<PhotoPermissionStatus> => {
     setIsLoading(true);
     try {
-      if (Platform.OS === 'ios') {
-        // iOS provides native limited photo picker if present
-        if (typeof MediaLibrary.presentPermissionsPicker === 'function') {
-          await MediaLibrary.presentPermissionsPicker();
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        if (typeof MediaLibrary.presentPermissionsPickerAsync === 'function') {
+          await MediaLibrary.presentPermissionsPickerAsync(['photo']);
         } else {
-          await MediaLibrary.requestPermissionsAsync(false);
+          await MediaLibrary.requestPermissionsAsync(false, ['photo']);
         }
       } else if (Platform.OS !== 'web') {
-        await MediaLibrary.requestPermissionsAsync(false);
+        await MediaLibrary.requestPermissionsAsync(false, ['photo']);
       }
 
       const newStatus: PhotoPermissionStatus = 'limited';
