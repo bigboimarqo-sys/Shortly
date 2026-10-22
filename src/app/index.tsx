@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
@@ -17,17 +18,30 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, BrandColors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type FlowView = 'onboarding' | 'signup' | 'signin' | 'main';
 
 export default function HomeScreen() {
+  const { user, userType, isAuthenticated, isLoading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<FlowView>('onboarding');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
+  // If already authenticated and user hasn't explicitly navigated to a preview, show main app
+  const showMainApp = isAuthenticated || currentView === 'main';
+
+  if (isLoading) {
+    return (
+      <View style={[styles.fullScreen, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={BrandColors.primary} />
+      </View>
+    );
+  }
+
   // 1. Onboarding Carousel (Splash & Onboarding slides - matching 1 Splash.png & 2 Onboarding.png)
-  if (currentView === 'onboarding') {
+  if (!showMainApp && currentView === 'onboarding') {
     return (
       <View style={styles.fullScreen}>
         <OnboardingCarousel
@@ -39,7 +53,7 @@ export default function HomeScreen() {
   }
 
   // 2. Sign Up Screen (matching 3 Sign up.png)
-  if (currentView === 'signup') {
+  if (!showMainApp && currentView === 'signup') {
     return (
       <View style={styles.fullScreen}>
         <SignUpView
@@ -53,7 +67,7 @@ export default function HomeScreen() {
   }
 
   // 3. Sign In Screen (matching 4 Sign in.png)
-  if (currentView === 'signin') {
+  if (!showMainApp && currentView === 'signin') {
     return (
       <View style={styles.fullScreen}>
         <SignInView
@@ -66,7 +80,7 @@ export default function HomeScreen() {
     );
   }
 
-  // 4. Main App
+  // 4. Main App Overview
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -84,26 +98,60 @@ export default function HomeScreen() {
 
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
           <HintRow
-            title="Screens"
-            hint={<ThemedText type="code">Splash, Onboarding, Sign up, Sign in</ThemedText>}
+            title="Account Status"
+            hint={
+              <ThemedText type="code">
+                {isAuthenticated ? 'Signed In (Supabase)' : 'Guest (No account)'}
+              </ThemedText>
+            }
           />
+          {isAuthenticated && (
+            <>
+              <HintRow
+                title="User Email"
+                hint={<ThemedText type="code">{user?.email || 'N/A'}</ThemedText>}
+              />
+              <HintRow
+                title="user_type"
+                hint={<ThemedText type="code">{userType || 'user'}</ThemedText>}
+              />
+            </>
+          )}
           <HintRow
-            title="Social Auth"
-            hint={<ThemedText type="code">Official Google &amp; Apple Logos</ThemedText>}
-          />
-          <HintRow
-            title="Password Field"
-            hint={<ThemedText type="code">Show/hide eye toggle</ThemedText>}
+            title="Session Storage"
+            hint={<ThemedText type="code">AsyncStorage (Synced)</ThemedText>}
           />
         </ThemedView>
 
-        <Pressable
-          onPress={() => setCurrentView('onboarding')}
-          style={({ pressed }) => [styles.replayButton, pressed && { opacity: 0.7 }]}>
-          <ThemedText type="smallBold" style={styles.replayText}>
-            &larr; Replay Onboarding &amp; Auth Flow
-          </ThemedText>
-        </Pressable>
+        {isAuthenticated ? (
+          <Pressable
+            onPress={async () => {
+              await signOut();
+              setCurrentView('onboarding');
+            }}
+            style={({ pressed }) => [styles.actionButton, styles.signOutButton, pressed && { opacity: 0.8 }]}>
+            <ThemedText type="smallBold" style={styles.signOutText}>
+              Sign Out
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View style={styles.guestActionRow}>
+            <Pressable
+              onPress={() => setCurrentView('signin')}
+              style={({ pressed }) => [styles.actionButton, styles.signInButton, pressed && { opacity: 0.8 }]}>
+              <ThemedText type="smallBold" style={styles.signInText}>
+                Sign In
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => setCurrentView('onboarding')}
+              style={({ pressed }) => [styles.actionButton, styles.replayButton, pressed && { opacity: 0.8 }]}>
+              <ThemedText type="smallBold" style={styles.replayText}>
+                View Onboarding
+              </ThemedText>
+            </Pressable>
+          </View>
+        )}
 
         {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
@@ -114,6 +162,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BrandColors.paper,
   },
   container: {
     flex: 1,
@@ -151,14 +204,36 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     borderRadius: Spacing.four,
   },
-  replayButton: {
+  guestActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  actionButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  replayButton: {
     backgroundColor: '#EDEAE1',
-    marginTop: 8,
   },
   replayText: {
     color: BrandColors.primary,
+  },
+  signInButton: {
+    backgroundColor: BrandColors.primary,
+  },
+  signInText: {
+    color: '#FFFFFF',
+  },
+  signOutButton: {
+    backgroundColor: '#FDE8E8',
+    marginTop: 8,
+    width: '100%',
+  },
+  signOutText: {
+    color: '#E02424',
   },
 });

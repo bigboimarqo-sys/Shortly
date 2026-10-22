@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PasswordInput } from '@/components/password-input';
 import { SocialAuthButton } from '@/components/social-auth-button';
 import { BrandColors } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 
 interface SignInViewProps {
   onSignUpPress: () => void;
@@ -30,11 +32,34 @@ export function SignInView({
   onSuccess,
   onBack,
 }: SignInViewProps) {
+  const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSignIn = () => {
-    if (onSuccess) onSuccess();
+  const handleSignIn = async () => {
+    setErrorMessage(null);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    const { error } = await signIn(cleanEmail, password);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (
@@ -65,6 +90,13 @@ export function SignInView({
             </Text>
           </View>
 
+          {/* Error Message */}
+          {errorMessage && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+
           {/* Form Inputs */}
           <View style={styles.form}>
             <TextInput
@@ -75,25 +107,37 @@ export function SignInView({
               autoCapitalize="none"
               autoCorrect={false}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
             />
 
             <PasswordInput
               placeholder="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
             />
 
             {/* Sign in Primary Button */}
             <Pressable
               onPress={handleSignIn}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
+                isLoading && styles.buttonDisabled,
               ]}
               accessibilityRole="button"
               accessibilityLabel="Sign in">
-              <Text style={styles.primaryButtonText}>Sign in</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign in</Text>
+              )}
             </Pressable>
 
             {/* Forgot password link */}
@@ -176,7 +220,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: {
-    marginBottom: 28,
+    marginBottom: 20,
   },
   title: {
     fontSize: 34,
@@ -190,6 +234,19 @@ const styles = StyleSheet.create({
     color: BrandColors.muted,
     lineHeight: 22,
     letterSpacing: -0.2,
+  },
+  errorBanner: {
+    backgroundColor: '#FDE8E8',
+    borderColor: '#F87171',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#991B1B',
+    fontSize: 14,
+    fontWeight: '500',
   },
   form: {
     gap: 14,
@@ -216,6 +273,9 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: '#FFFFFF',

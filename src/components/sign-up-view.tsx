@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PasswordInput } from '@/components/password-input';
 import { SocialAuthButton } from '@/components/social-auth-button';
 import { BrandColors } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 
 interface SignUpViewProps {
   onSignInPress: () => void;
@@ -28,13 +30,45 @@ export function SignUpView({
   onSuccess,
   onBack,
 }: SignUpViewProps) {
+  const { signUp, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successInfo, setSuccessInfo] = useState<string | null>(null);
 
-  const handleSubmit = () => {
-    // Demo / validation handler
-    if (onSuccess) onSuccess();
+  const handleSubmit = async () => {
+    setErrorMessage(null);
+    setSuccessInfo(null);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+    if (!password || password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+    if (!agreeTerms) {
+      setErrorMessage('Please agree to the Terms and Privacy Policy to continue.');
+      return;
+    }
+
+    const { error, user } = await signUp(cleanEmail, password);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    if (user && !user.confirmed_at && user.identities?.length) {
+      setSuccessInfo('Account created! Please check your email to confirm your account.');
+    }
+
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (
@@ -65,6 +99,19 @@ export function SignUpView({
             </Text>
           </View>
 
+          {/* Status Messages */}
+          {errorMessage && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+
+          {successInfo && (
+            <View style={styles.successBanner}>
+              <Text style={styles.successText}>{successInfo}</Text>
+            </View>
+          )}
+
           {/* Form Inputs */}
           <View style={styles.form}>
             <TextInput
@@ -75,18 +122,27 @@ export function SignUpView({
               autoCapitalize="none"
               autoCorrect={false}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
             />
 
             <PasswordInput
               placeholder="Password (8+ characters)"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (errorMessage) setErrorMessage(null);
+              }}
             />
 
             {/* Checkbox */}
             <Pressable
-              onPress={() => setAgreeTerms(!agreeTerms)}
+              onPress={() => {
+                setAgreeTerms(!agreeTerms);
+                if (errorMessage) setErrorMessage(null);
+              }}
               style={styles.checkboxRow}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: agreeTerms }}>
@@ -101,13 +157,19 @@ export function SignUpView({
             {/* Create Account Primary Button */}
             <Pressable
               onPress={handleSubmit}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
+                isLoading && styles.buttonDisabled,
               ]}
               accessibilityRole="button"
               accessibilityLabel="Create account">
-              <Text style={styles.primaryButtonText}>Create account</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Create account</Text>
+              )}
             </Pressable>
 
             {/* Continue with Google */}
@@ -184,7 +246,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: {
-    marginBottom: 28,
+    marginBottom: 20,
   },
   title: {
     fontSize: 34,
@@ -198,6 +260,32 @@ const styles = StyleSheet.create({
     color: BrandColors.muted,
     lineHeight: 22,
     letterSpacing: -0.2,
+  },
+  errorBanner: {
+    backgroundColor: '#FDE8E8',
+    borderColor: '#F87171',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#991B1B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  successBanner: {
+    backgroundColor: '#DEF7EC',
+    borderColor: '#31C48D',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  successText: {
+    color: '#03543F',
+    fontSize: 14,
+    fontWeight: '500',
   },
   form: {
     gap: 14,
@@ -258,6 +346,9 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: '#FFFFFF',
