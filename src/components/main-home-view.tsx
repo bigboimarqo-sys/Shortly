@@ -81,7 +81,12 @@ export function MainHomeView({
     pickScreenshotsFromPhone,
     refreshScreenshots,
   } = useScreenshots();
-  const { isPlus } = useSubscription();
+  const {
+    isPlus,
+    isFreeModeExpired,
+    remainingFreeDays,
+    freeScreenshotLimit,
+  } = useSubscription();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCollection, setActiveCollection] = useState<string>('All');
@@ -535,9 +540,14 @@ export function MainHomeView({
                         Shotly Plus Active: Unlimited screenshots{' '}
                         <Text style={styles.planUpgradeLink}>Manage</Text>
                       </>
+                    ) : isFreeModeExpired ? (
+                      <>
+                        Free plan: 7-day mode ended ({screenshots.length} screenshots){' '}
+                        <Text style={styles.planUpgradeLink}>Upgrade</Text>
+                      </>
                     ) : (
                       <>
-                        Free plan: {screenshots.length} of 500 organised{' '}
+                        Free plan: {screenshots.length} of {freeScreenshotLimit} organised ({remainingFreeDays}d left){' '}
                         <Text style={styles.planUpgradeLink}>Upgrade</Text>
                       </>
                     )}

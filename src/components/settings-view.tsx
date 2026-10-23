@@ -49,7 +49,13 @@ export function SettingsView({
   const { user, isAuthenticated, signOut } = useAuth();
   const { status, resetPermissions } = usePhotoPermissions();
   const { screenshots } = useScreenshots();
-  const { isPlus, record, remainingTrialDays } = useSubscription();
+  const {
+    isPlus,
+    record,
+    remainingTrialDays,
+    remainingFreeDays,
+    isFreeModeExpired,
+  } = useSubscription();
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [showAiSupport, setShowAiSupport] = useState(false);
@@ -124,7 +130,9 @@ export function SettingsView({
                     ? record.status === 'trialing'
                       ? `Plus (Trial - ${remainingTrialDays}d left)`
                       : 'Plus Active'
-                    : 'Free'}
+                    : isFreeModeExpired
+                    ? 'Free (7d Expired)'
+                    : `Free (${remainingFreeDays}d left · 100 max)`}
                 </Text>
                 <Text style={styles.upgradeInline}>
                   {isPlus ? 'Manage' : 'Upgrade'}

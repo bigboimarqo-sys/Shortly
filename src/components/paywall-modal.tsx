@@ -26,7 +26,11 @@ import {
 } from '@/components/payment-logos';
 import {
   AllowedPaymentMethod,
+  FREE_MODE_DAYS,
+  FREE_SCREENSHOT_LIMIT,
+  SUBSCRIPTION_MODEL,
   SandboxPaymentScenario,
+  SubscriptionPlan,
 } from '@/services/entitlement-service';
 
 export type PaywallScreen =
@@ -63,7 +67,7 @@ export function PaywallModal({
   const [currentScreen, setCurrentScreen] = useState<PaywallScreen>('main');
   const [lastAttemptedScreen, setLastAttemptedScreen] =
     useState<PaywallScreen>('pay_by_card');
-  const [selectedPlan, setSelectedPlan] = useState<'plus_annual' | 'plus_monthly'>(
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(
     'plus_annual'
   );
   const [selectedMethod, setSelectedMethod] = useState<AllowedPaymentMethod>('card');
@@ -80,14 +84,18 @@ export function PaywallModal({
   const [showTermsSheet, setShowTermsSheet] = useState(false);
   const [showPrivacySheet, setShowPrivacySheet] = useState(false);
 
-  // Plan metadata (prices strictly in ZAR)
-  const isAnnual = selectedPlan === 'plus_annual';
-  const planTitle = isAnnual ? 'Shotly Plus, Annual' : 'Shotly Plus, Monthly';
-  const planPriceText = isAnnual ? 'R349 / year' : 'R39 / month';
-  const planBillingClause = isAnnual
-    ? '7-day free trial, then R349 / year. Cancel anytime.'
-    : '7-day free trial, then R39 / month. Cancel anytime.';
-  const planAmountNumber = isAnnual ? 349 : 39;
+  // Plan metadata derived from SUBSCRIPTION_MODEL matching user screenshot
+  const currentPlanDetail = useMemo(() => {
+    return (
+      SUBSCRIPTION_MODEL.find((p) => p.id === selectedPlan) ||
+      SUBSCRIPTION_MODEL[1]
+    );
+  }, [selectedPlan]);
+
+  const planTitle = `Shotly ${currentPlanDetail.name}`;
+  const planPriceText = currentPlanDetail.priceZAR;
+  const planBillingClause = `7-day free trial, then ${currentPlanDetail.priceZAR}. Cancel anytime.`;
+  const planAmountNumber = currentPlanDetail.priceAmount;
 
   // Formatted date 7 days from today for success screen
   const renewalDateFormatted = useMemo(() => {
@@ -407,35 +415,181 @@ export function PaywallModal({
                   </View>
                 </View>
 
+                {/* Subscription Model Comparison Table matching User Screenshot */}
+                <View style={styles.tableCard}>
+                  <Text style={styles.tableTitle}>Subscription model</Text>
+
+                  <View style={styles.tableContainer}>
+                    {/* Header Row */}
+                    <View style={styles.tableHeaderRow}>
+                      <Text style={[styles.tableHeaderCell, { flex: 1.1 }]}>Plan</Text>
+                      <Text style={[styles.tableHeaderCell, { flex: 1.8 }]}>Price (ZAR)</Text>
+                      <Text style={[styles.tableHeaderCell, { flex: 2.6 }]}>Includes</Text>
+                    </View>
+
+                    {/* Free */}
+                    <View style={styles.tableRow}>
+                      <View style={{ flex: 1.1 }}>
+                        <Text style={styles.tableCellBold}>Free</Text>
+                        <Text style={styles.freeModeTag}>7-day mode</Text>
+                      </View>
+                      <Text style={[styles.tableCell, { flex: 1.8 }]}>R0</Text>
+                      <Text style={[styles.tableCell, { flex: 2.6 }]}>
+                        Auto-capture, OCR search, 100 screenshots
+                      </Text>
+                    </View>
+
+                    {/* Plus */}
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Plus</Text>
+                      <Text style={[styles.tableCell, { flex: 1.8 }]}>
+                        R39 / month or{'\n'}R349 / year
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 2.6 }]}>
+                        Unlimited library, clean-up, Private Vault
+                      </Text>
+                    </View>
+
+                    {/* Pro */}
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Pro</Text>
+                      <Text style={[styles.tableCell, { flex: 1.8 }]}>
+                        R79 / month or{'\n'}R699 / year
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 2.6 }]}>
+                        Cloud sync, Receipt Tracker, Smart Actions
+                      </Text>
+                    </View>
+
+                    {/* Team */}
+                    <View style={styles.tableRowLast}>
+                      <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Team</Text>
+                      <Text style={[styles.tableCell, { flex: 1.8 }]}>
+                        R149 / month,{'\n'}5 seats
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 2.6 }]}>
+                        Pro plus shared collections
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Footnote matching screenshot */}
+                  <Text style={styles.tableFooterNote}>
+                    Prices are hypotheses to validate; 7-day free trial on paid plans.
+                  </Text>
+                </View>
+
+                {/* Section header: Select a plan to start trial */}
+                <Text style={styles.sectionHeading}>Choose your plan</Text>
+
                 {/* Plan Selectors matching Paywall.png (Exact ZAR Store Prices) */}
                 <View style={styles.plansContainer}>
-                  {/* Annual Plan: R349 / year in ZAR */}
+                  {/* Plus Annual: R349 / year in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Annual plan R349 per year best value"
+                    accessibilityLabel="Plus Annual plan R349 per year best value"
                     onPress={() => setSelectedPlan('plus_annual')}
                     style={[
                       styles.planCard,
                       selectedPlan === 'plus_annual' && styles.planCardSelected,
                     ]}>
                     <View style={styles.planCardHeader}>
-                      <Text style={styles.planName}>Annual</Text>
-                      <Text style={styles.bestValueBadge}>Best value</Text>
+                      <Text style={styles.planName}>Plus Annual</Text>
+                      <Text style={styles.bestValueBadge}>Best value (R29/mo)</Text>
+                      <View style={styles.trialPillSmall}>
+                        <Text style={styles.trialPillSmallText}>7-day trial</Text>
+                      </View>
                     </View>
                     <Text style={styles.planPrice}>R349 / year</Text>
+                    <Text style={styles.planIncludesSnippet}>
+                      Unlimited library, clean-up & Private Vault
+                    </Text>
                   </Pressable>
 
-                  {/* Monthly Plan: R39 / month in ZAR */}
+                  {/* Plus Monthly: R39 / month in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Monthly plan R39 per month"
+                    accessibilityLabel="Plus Monthly plan R39 per month"
                     onPress={() => setSelectedPlan('plus_monthly')}
                     style={[
                       styles.planCard,
                       selectedPlan === 'plus_monthly' && styles.planCardSelected,
                     ]}>
-                    <Text style={styles.planName}>Monthly</Text>
+                    <View style={styles.planCardHeader}>
+                      <Text style={styles.planName}>Plus Monthly</Text>
+                      <View style={styles.trialPillSmall}>
+                        <Text style={styles.trialPillSmallText}>7-day trial</Text>
+                      </View>
+                    </View>
                     <Text style={styles.planPrice}>R39 / month</Text>
+                    <Text style={styles.planIncludesSnippet}>
+                      Unlimited library, clean-up & Private Vault
+                    </Text>
+                  </Pressable>
+
+                  {/* Pro Annual: R699 / year in ZAR */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Pro Annual plan R699 per year"
+                    onPress={() => setSelectedPlan('pro_annual')}
+                    style={[
+                      styles.planCard,
+                      selectedPlan === 'pro_annual' && styles.planCardSelected,
+                    ]}>
+                    <View style={styles.planCardHeader}>
+                      <Text style={styles.planName}>Pro Annual</Text>
+                      <Text style={styles.bestValueBadge}>Save 26% (R58/mo)</Text>
+                      <View style={styles.trialPillSmall}>
+                        <Text style={styles.trialPillSmallText}>7-day trial</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.planPrice}>R699 / year</Text>
+                    <Text style={styles.planIncludesSnippet}>
+                      Cloud sync, Receipt Tracker & Smart Actions
+                    </Text>
+                  </Pressable>
+
+                  {/* Pro Monthly: R79 / month in ZAR */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Pro Monthly plan R79 per month"
+                    onPress={() => setSelectedPlan('pro_monthly')}
+                    style={[
+                      styles.planCard,
+                      selectedPlan === 'pro_monthly' && styles.planCardSelected,
+                    ]}>
+                    <View style={styles.planCardHeader}>
+                      <Text style={styles.planName}>Pro Monthly</Text>
+                      <View style={styles.trialPillSmall}>
+                        <Text style={styles.trialPillSmallText}>7-day trial</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.planPrice}>R79 / month</Text>
+                    <Text style={styles.planIncludesSnippet}>
+                      Cloud sync, Receipt Tracker & Smart Actions
+                    </Text>
+                  </Pressable>
+
+                  {/* Team Monthly: R149 / month in ZAR (5 seats) */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Team Monthly plan R149 per month 5 seats"
+                    onPress={() => setSelectedPlan('team_monthly')}
+                    style={[
+                      styles.planCard,
+                      selectedPlan === 'team_monthly' && styles.planCardSelected,
+                    ]}>
+                    <View style={styles.planCardHeader}>
+                      <Text style={styles.planName}>Team Monthly</Text>
+                      <Text style={styles.bestValueBadge}>5 seats</Text>
+                      <View style={styles.trialPillSmall}>
+                        <Text style={styles.trialPillSmallText}>7-day trial</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.planPrice}>R149 / month</Text>
+                    <Text style={styles.planIncludesSnippet}>
+                      Pro features plus shared team collections
+                    </Text>
                   </Pressable>
                 </View>
 
@@ -448,7 +602,9 @@ export function PaywallModal({
                     styles.primaryButton,
                     pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                   ]}>
-                  <Text style={styles.primaryButtonText}>Start 7-day free trial</Text>
+                  <Text style={styles.primaryButtonText}>
+                    Start 7-day free trial · {currentPlanDetail.name}
+                  </Text>
                 </Pressable>
 
                 {/* Hard rule: Always show Restore purchases, Terms and Privacy on Paywall */}
@@ -1110,6 +1266,114 @@ const styles = StyleSheet.create({
       web: "'Space Grotesk', system-ui, sans-serif",
       default: undefined,
     }),
+  },
+  // Subscription Model Table (matches user screenshot)
+  tableCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    padding: 16,
+    marginBottom: 24,
+  },
+  tableTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: BrandColors.ink,
+    marginBottom: 14,
+    letterSpacing: -0.4,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
+  },
+  tableContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    overflow: 'hidden',
+    backgroundColor: '#FAF9F5',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#EAE7DF',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+  },
+  tableHeaderCell: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+    backgroundColor: '#FFFFFF',
+  },
+  tableRowLast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  tableCellBold: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: BrandColors.ink,
+  },
+  tableCell: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: BrandColors.ink,
+  },
+  freeModeTag: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: BrandColors.primary,
+    marginTop: 2,
+  },
+  tableFooterNote: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: BrandColors.muted,
+    fontStyle: 'italic',
+    marginTop: 12,
+  },
+  sectionHeading: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: BrandColors.ink,
+    marginBottom: 12,
+    letterSpacing: -0.3,
+  },
+  planIncludesSnippet: {
+    fontSize: 12,
+    color: BrandColors.muted,
+    marginTop: 6,
+    lineHeight: 16,
+  },
+  trialPillSmall: {
+    backgroundColor: '#E8F1FA',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 'auto',
+  },
+  trialPillSmallText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: BrandColors.primary,
   },
   plansContainer: {
     gap: 14,

@@ -12,6 +12,8 @@ import React, {
 } from 'react';
 import { Platform } from 'react-native';
 
+import { EntitlementService, FREE_SCREENSHOT_LIMIT } from '@/services/entitlement-service';
+
 export const SCREENSHOTS_STORAGE_KEY = '@shotly_imported_screenshots';
 export const COLLECTIONS_STORAGE_KEY = '@shotly_custom_collections';
 
@@ -499,9 +501,10 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         });
 
         setScreenshots((prev) => {
+          const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
           const existingUris = new Set(prev.map((p) => p.uri));
           const uniqueNew = deviceScreenshots.filter((d) => !existingUris.has(d.uri));
-          const merged = [...uniqueNew, ...prev].slice(0, 500);
+          const merged = [...uniqueNew, ...prev].slice(0, maxAllowed);
           AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(merged));
           return merged;
         });
@@ -553,10 +556,11 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
           });
 
           setScreenshots((prev) => {
+            const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
             const existingUris = new Set(prev.map((p) => p.uri));
             const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
-            // Enforce free tier max 500 screenshots
-            const updated = [...uniqueNew, ...prev].slice(0, 500);
+            // Enforce free tier max 100 screenshots within 7-day free mode
+            const updated = [...uniqueNew, ...prev].slice(0, maxAllowed);
             AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
             return updated;
           });
@@ -573,7 +577,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     []
   );
 
-  // Bulk import all device screenshots (up to 500)
+  // Bulk import all device screenshots (up to 100 on Free, unlimited on Plus)
   const importAllDeviceScreenshots = useCallback(async (): Promise<number> => {
     setIsLoading(true);
     setError(null);
@@ -583,12 +587,13 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
           const perm = await MediaLibrary.getPermissionsAsync(false, ['photo']);
           if (perm.granted) {
             let assets: MediaLibrary.Asset[] = [];
+            const queryLimit = EntitlementService.isPlusActive() ? 1000 : FREE_SCREENSHOT_LIMIT;
             try {
               const targetAlbum = await MediaLibrary.getAlbumAsync('Screenshots');
               if (targetAlbum) {
                 const res = await MediaLibrary.getAssetsAsync({
                   album: targetAlbum,
-                  first: 500,
+                  first: queryLimit,
                   mediaType: MediaLibrary.MediaType.photo,
                   sortBy: [[MediaLibrary.SortBy.creationTime, false]],
                 });
@@ -596,7 +601,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
               }
             } catch (e) {
               const res = await MediaLibrary.getAssetsAsync({
-                first: 500,
+                first: queryLimit,
                 mediaType: MediaLibrary.MediaType.photo,
                 sortBy: [[MediaLibrary.SortBy.creationTime, false]],
               });
@@ -624,9 +629,10 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
               });
 
               setScreenshots((prev) => {
+                const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
                 const existingUris = new Set(prev.map((p) => p.uri));
                 const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
-                const updated = [...uniqueNew, ...prev].slice(0, 500);
+                const updated = [...uniqueNew, ...prev].slice(0, maxAllowed);
                 AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
                 return updated;
               });

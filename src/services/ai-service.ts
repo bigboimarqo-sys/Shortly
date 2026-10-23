@@ -347,18 +347,22 @@ export class AIService {
     let actionLink: SupportChatMessage['actionLink'] = undefined;
 
     // A. Pricing / Cost / Plans in ZAR
-    if (msg.includes('price') || msg.includes('cost') || msg.includes('zar') || msg.includes('rand') || msg.includes('how much') || msg.includes('plus')) {
-      text = `Shotly Plus pricing for South Africa is simple and transparent:
-• Annual Plan: R349 / year (only ~R29.08/mo — save 25%)
-• Monthly Plan: R39 / month
-Both plans include a 7-day free trial. You will not be charged today and can cancel anytime in Settings!`;
-      actionLink = { type: 'paywall', label: 'View Shotly Plus Plans' };
+    if (msg.includes('price') || msg.includes('cost') || msg.includes('zar') || msg.includes('rand') || msg.includes('how much') || msg.includes('plan') || msg.includes('plus') || msg.includes('free') || msg.includes('subscription') || msg.includes('model')) {
+      text = `Here is Shotly's full Subscription Model for South Africa (ZAR):
+• Free: R0 (Auto-capture, OCR search, 100 screenshots limit, runs for 7 days)
+• Plus: R39 / month or R349 / year (Unlimited library, clean-up, Private Vault)
+• Pro: R79 / month or R699 / year (Cloud sync, Receipt Tracker, Smart Actions)
+• Team: R149 / month, 5 seats (Pro plus shared collections)
+
+All paid plans include a 7-day free trial on Card (Visa/Mastercard) and digital wallets (Apple Pay, Google Pay, Samsung Pay). Cancel anytime!`;
+      actionLink = { type: 'paywall', label: 'View Subscription Model' };
     }
     // B. Free Trial & Cancellation
     else if (msg.includes('trial') || msg.includes('cancel') || msg.includes('refund') || msg.includes('7 day') || msg.includes('7-day')) {
-      text = `Our 7-day free trial gives you full, unrestricted access to Shotly Plus:
-• Supported on Card (Visa & Mastercard) and digital wallets (Google Pay, Apple Pay, Samsung Pay).
-• You will not be charged during the 7-day trial.
+      text = `Here is how trials work on Shotly:
+• Free Mode: The Free plan runs for 7 days with a limit of 100 screenshots.
+• Paid Plans Trial: 7-day free trial on Plus, Pro, and Team plans with full features.
+• Supported on Card and digital wallets (Google Pay, Apple Pay, Samsung Pay). Instant EFT is excluded.
 • You can cancel anytime directly from Settings before day 7 with zero penalty.`;
       actionLink = { type: 'settings', label: 'Manage Subscription in Settings' };
     }

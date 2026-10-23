@@ -65,7 +65,12 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
     pickScreenshotsFromPhone,
     importAllDeviceScreenshots,
   } = useScreenshots();
-  const { isPlus } = useSubscription();
+  const {
+    isPlus,
+    isFreeModeExpired,
+    remainingFreeDays,
+    freeScreenshotLimit,
+  } = useSubscription();
 
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
@@ -74,7 +79,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
 
   const handleAutoImport = async () => {
-    if (!isPlus && screenshots.length >= 500) {
+    if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
       setShowImportModal(false);
       setShowPaywall(true);
       return;
@@ -99,7 +104,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   };
 
   const handlePickFromPhotos = async () => {
-    if (!isPlus && screenshots.length >= 500) {
+    if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
       setShowImportModal(false);
       setShowPaywall(true);
       return;
@@ -171,7 +176,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Import photos from phone"
                 onPress={() => {
-                  if (!isPlus && screenshots.length >= 500) {
+                  if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
                     setShowPaywall(true);
                   } else {
                     setShowImportModal(true);
@@ -414,12 +419,16 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
             <View style={styles.capacityBanner}>
               <View style={styles.capacityHeader}>
                 <Text style={styles.capacityLabel}>
-                  {isPlus ? 'Shotly Plus Storage' : 'Free Tier Storage'}
+                  {isPlus
+                    ? 'Shotly Plus Storage'
+                    : isFreeModeExpired
+                    ? 'Free Mode (Expired)'
+                    : `Free Plan (${remainingFreeDays}d free mode left)`}
                 </Text>
                 <Text style={styles.capacityValue}>
                   {isPlus
                     ? `${screenshots.length} screenshots (Unlimited)`
-                    : `${screenshots.length} / 500 screenshots used`}
+                    : `${screenshots.length} / ${freeScreenshotLimit} screenshots used`}
                 </Text>
               </View>
               <View style={styles.capacityProgressBar}>
@@ -431,8 +440,12 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                         ? '100%'
                         : `${Math.min(
                             100,
-                            Math.max(5, (screenshots.length / 500) * 100)
+                            Math.max(5, (screenshots.length / freeScreenshotLimit) * 100)
                           )}%`,
+                      backgroundColor:
+                        !isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)
+                          ? '#EF4444'
+                          : BrandColors.primary,
                     },
                   ]}
                 />
@@ -458,14 +471,18 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                   Auto-Import All Device Screenshots
                 </Text>
                 <Text style={styles.importOptionDescPrimary}>
-                  Automatically scans your device for all screenshots (up to 500) and categorises them on-device.
+                  {isPlus
+                    ? 'Automatically scans your device for all screenshots and categorises them on-device.'
+                    : `Automatically scans your device for up to ${freeScreenshotLimit} screenshots in your 7-day free mode.`}
                 </Text>
                 <View style={styles.importOptionButtonPrimary}>
                   {isBulkImporting ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <Text style={styles.importOptionButtonPrimaryText}>
-                      Import All Screenshots (Up to 500)
+                      {isPlus
+                        ? 'Import All Screenshots (Unlimited)'
+                        : `Import All Screenshots (Up to ${freeScreenshotLimit})`}
                     </Text>
                   )}
                 </View>
