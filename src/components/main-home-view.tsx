@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import {
   Folder,
+  HeadsetHelp,
   MediaImage,
   NavArrowRight,
   Plus,
@@ -23,12 +24,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AISupportModal } from '@/components/ai-support-modal';
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { CleanUpModal } from '@/components/clean-up-modal';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useSubscription } from '@/context/subscription-context';
+import { AIService } from '@/services/ai-service';
 import {
   ScreenshotCategory,
   ScreenshotItem,
@@ -86,6 +89,7 @@ export function MainHomeView({
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
   const [showCleanUpModal, setShowCleanUpModal] = useState(false);
   const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [showAiSupport, setShowAiSupport] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const allCategories: ScreenshotCategory[] = [
@@ -102,6 +106,12 @@ export function MainHomeView({
   ];
 
   const collections = ['All', 'Receipts', 'Recipes', 'Work', 'Tickets', 'Chats', 'Maps'];
+
+  // AI Semantic Search Insight
+  const aiSearchInsight = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    return AIService.searchLibraryWithAI(searchQuery, screenshots);
+  }, [searchQuery, screenshots]);
 
   // Search filter across ALL screenshots and ALL categories
   const searchResults = useMemo(() => {
@@ -175,20 +185,36 @@ export function MainHomeView({
               </Text>
             </View>
 
-            {/* Quick action to pick screenshots directly from phone */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Import photos from phone"
-              onPress={() => {
-                pickScreenshotsFromPhone();
-              }}
-              style={({ pressed }) => [
-                styles.addPhotoButton,
-                pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-              ]}>
-              <Plus color="#FFFFFF" width={16} height={16} strokeWidth={2.4} />
-              <Text style={styles.addPhotoButtonText}>Import Photos</Text>
-            </Pressable>
+            <View style={styles.headerRightActions}>
+              {/* 24/7 Live AI Customer Support Header Button */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open 24/7 Live AI Support"
+                onPress={() => setShowAiSupport(true)}
+                style={({ pressed }) => [
+                  styles.aiSupportHeaderBtn,
+                  pressed && { opacity: 0.8 },
+                ]}>
+                <HeadsetHelp color={BrandColors.primary} width={15} height={15} strokeWidth={2.4} />
+                <Text style={styles.aiSupportHeaderBtnText}>24/7 AI</Text>
+                <View style={styles.onlineDotMini} />
+              </Pressable>
+
+              {/* Quick action to pick screenshots directly from phone */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Import photos from phone"
+                onPress={() => {
+                  pickScreenshotsFromPhone();
+                }}
+                style={({ pressed }) => [
+                  styles.addPhotoButton,
+                  pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                ]}>
+                <Plus color="#FFFFFF" width={16} height={16} strokeWidth={2.4} />
+                <Text style={styles.addPhotoButtonText}>Import</Text>
+              </Pressable>
+            </View>
           </View>
 
           {/* Floating Pill Search Bar (Modern Floating Capsule Design) */}
@@ -271,6 +297,17 @@ export function MainHomeView({
                 </Text>
                 <Text style={styles.searchQueryBadge}>"{searchQuery.trim()}"</Text>
               </View>
+
+              {/* AI Semantic Search Insight Card */}
+              {aiSearchInsight && (
+                <View style={styles.aiSearchCard}>
+                  <View style={styles.aiSearchHeader}>
+                    <Sparks color={BrandColors.primary} width={15} height={15} strokeWidth={2.5} />
+                    <Text style={styles.aiSearchTitle}>Shotly AI Search</Text>
+                  </View>
+                  <Text style={styles.aiSearchAnswer}>{aiSearchInsight.bestAnswer}</Text>
+                </View>
+              )}
 
               {searchResults.length === 0 ? (
                 <View style={styles.emptySearchCard}>
@@ -615,6 +652,15 @@ export function MainHomeView({
         />
       )}
 
+      {/* 24/7 Live AI Customer Support Modal */}
+      <AISupportModal
+        visible={showAiSupport}
+        onClose={() => setShowAiSupport(false)}
+        onOpenPaywall={() => setShowPaywallModal(true)}
+        onOpenCleanUp={() => setShowCleanUpModal(true)}
+        onOpenCollections={() => onCollectionPress && onCollectionPress('All')}
+      />
+
       {/* Floating Modern Navigation Pill */}
       <BottomTabBar
         activeTab="Home"
@@ -664,6 +710,62 @@ const styles = StyleSheet.create({
     color: BrandColors.muted,
     marginTop: 2,
     fontWeight: '500',
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiSupportHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E2EE',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderRadius: 14,
+    shadowColor: BrandColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  aiSupportHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  onlineDotMini: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  aiSearchCard: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginBottom: 16,
+  },
+  aiSearchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  aiSearchTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  aiSearchAnswer: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: BrandColors.ink,
   },
   addPhotoButton: {
     flexDirection: 'row',

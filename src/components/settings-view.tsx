@@ -1,3 +1,4 @@
+import { HeadsetHelp, NavArrowRight, Sparks } from 'iconoir-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AISupportModal } from '@/components/ai-support-modal';
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { PaywallModal } from '@/components/paywall-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
@@ -49,6 +51,7 @@ export function SettingsView({
   const { isPlus, record, remainingTrialDays } = useSubscription();
 
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAiSupport, setShowAiSupport] = useState(false);
   const [autoCapture, setAutoCapture] = useState(true);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
@@ -77,6 +80,35 @@ export function SettingsView({
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
           </View>
+
+          {/* 24/7 Live AI Customer Support Banner */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open 24/7 Live AI Customer Support"
+            onPress={() => setShowAiSupport(true)}
+            style={({ pressed }) => [
+              styles.aiSupportCard,
+              pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+            ]}>
+            <View style={styles.aiSupportLeft}>
+              <View style={styles.aiSupportIconBox}>
+                <HeadsetHelp color="#FFFFFF" width={22} height={22} strokeWidth={2.4} />
+                <View style={styles.aiSupportOnlineDot} />
+              </View>
+              <View style={styles.aiSupportTextContent}>
+                <View style={styles.aiSupportTitleRow}>
+                  <Text style={styles.aiSupportTitle}>24/7 Live AI Support</Text>
+                  <View style={styles.liveBadge}>
+                    <Text style={styles.liveBadgeText}>ONLINE</Text>
+                  </View>
+                </View>
+                <Text style={styles.aiSupportSubtitle}>
+                  Instant answers on pricing in ZAR, OCR, &amp; subscriptions
+                </Text>
+              </View>
+            </View>
+            <NavArrowRight color={BrandColors.primary} width={20} height={20} strokeWidth={2.4} />
+          </Pressable>
 
           {/* Settings Items matching Settings.png */}
           <View style={styles.listContainer}>
@@ -224,6 +256,15 @@ export function SettingsView({
         onClose={() => setShowPaywall(false)}
       />
 
+      {/* 24/7 Live AI Customer Support Modal */}
+      <AISupportModal
+        visible={showAiSupport}
+        onClose={() => setShowAiSupport(false)}
+        onOpenPaywall={() => setShowPaywall(true)}
+        onOpenPermissions={handleResetPermissions}
+        onOpenCollections={() => onTabChange && onTabChange('Collections')}
+      />
+
       {/* 10 Smart Categories Modal */}
       <Modal
         visible={showCategoriesModal}
@@ -307,6 +348,82 @@ const styles = StyleSheet.create({
       web: "'Space Grotesk', system-ui, sans-serif",
       default: undefined,
     }),
+  },
+  aiSupportCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#D7E2EE',
+    shadowColor: BrandColors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiSupportLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  aiSupportIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: BrandColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  aiSupportOnlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  aiSupportTextContent: {
+    flex: 1,
+  },
+  aiSupportTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+  },
+  aiSupportTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
+  },
+  liveBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  liveBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  aiSupportSubtitle: {
+    fontSize: 13,
+    color: BrandColors.muted,
+    lineHeight: 17,
   },
   listContainer: {
     marginBottom: 28,

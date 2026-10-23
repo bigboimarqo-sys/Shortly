@@ -18,6 +18,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useSubscription } from '@/context/subscription-context';
 import {
+  ApplePayLogo,
+  CreditCardLogo,
+  GooglePayLogo,
+  PayFastLogo,
+  SamsungPayLogo,
+} from '@/components/payment-logos';
+import {
   AllowedPaymentMethod,
   SandboxPaymentScenario,
 } from '@/services/entitlement-service';
@@ -513,7 +520,7 @@ export function PaywallModal({
                       pressed && { opacity: 0.8 },
                     ]}>
                     <View style={styles.methodIconBox}>
-                      <Text style={styles.methodIconText}>💳</Text>
+                      <CreditCardLogo size={22} />
                     </View>
                     <View style={styles.methodInfo}>
                       <Text style={styles.methodRowTitle}>Card</Text>
@@ -530,7 +537,7 @@ export function PaywallModal({
                       pressed && { opacity: 0.8 },
                     ]}>
                     <View style={styles.methodIconBox}>
-                      <Text style={styles.methodIconGPay}>GPay</Text>
+                      <GooglePayLogo size={20} color={BrandColors.ink} variant="color" />
                     </View>
                     <View style={styles.methodInfo}>
                       <Text style={styles.methodRowTitle}>Google Pay</Text>
@@ -547,7 +554,7 @@ export function PaywallModal({
                       pressed && { opacity: 0.8 },
                     ]}>
                     <View style={styles.methodIconBox}>
-                      <Text style={styles.methodIconText}>Pay</Text>
+                      <ApplePayLogo size={20} color={BrandColors.ink} />
                     </View>
                     <View style={styles.methodInfo}>
                       <Text style={styles.methodRowTitle}>Apple Pay</Text>
@@ -564,7 +571,7 @@ export function PaywallModal({
                       pressed && { opacity: 0.8 },
                     ]}>
                     <View style={styles.methodIconBox}>
-                      <Text style={styles.methodIconText}>Pay</Text>
+                      <SamsungPayLogo size={15} color={BrandColors.ink} />
                     </View>
                     <View style={styles.methodInfo}>
                       <Text style={styles.methodRowTitle}>Samsung Pay</Text>
@@ -581,7 +588,7 @@ export function PaywallModal({
                       pressed && { opacity: 0.8 },
                     ]}>
                     <View style={styles.methodIconBox}>
-                      <Text style={styles.methodIconText}>PF</Text>
+                      <PayFastLogo size={22} />
                     </View>
                     <View style={styles.methodInfo}>
                       <Text style={styles.methodRowTitle}>PayFast</Text>
@@ -799,7 +806,7 @@ export function PaywallModal({
                       styles.walletDarkButton,
                       pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
                     ]}>
-                    <Text style={styles.walletDarkButtonText}>Google Pay</Text>
+                    <GooglePayLogo size={24} color="#FFFFFF" variant="color" />
                   </Pressable>
 
                   {/* Apple Pay */}
@@ -812,7 +819,7 @@ export function PaywallModal({
                       styles.walletDarkButton,
                       pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
                     ]}>
-                    <Text style={styles.walletDarkButtonText}>Apple Pay</Text>
+                    <ApplePayLogo size={24} color="#FFFFFF" />
                   </Pressable>
 
                   {/* Samsung Pay */}
@@ -825,7 +832,7 @@ export function PaywallModal({
                       styles.walletDarkButton,
                       pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
                     ]}>
-                    <Text style={styles.walletDarkButtonText}>Samsung Pay</Text>
+                    <SamsungPayLogo size={22} color="#FFFFFF" />
                   </Pressable>
                 </View>
 

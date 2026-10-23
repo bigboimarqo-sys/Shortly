@@ -4,13 +4,16 @@ import {
   Copy,
   EditPencil,
   Plus,
+  Send,
   ShareAndroid,
+  Sparks,
   Trash,
   Xmark,
 } from 'iconoir-react-native';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -22,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AIService, SmartAction } from '@/services/ai-service';
 
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import {
@@ -81,6 +85,51 @@ export function ScreenshotDetailModal({
   const [tagInput, setTagInput] = useState('');
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+
+  // AI Assist States
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  const aiInsight = useMemo(() => {
+    if (!screenshot) return null;
+    return AIService.analyzeScreenshot(
+      screenshot.ocrText || '',
+      screenshot.category,
+      screenshot.filename
+    );
+  }, [screenshot?.ocrText, screenshot?.category, screenshot?.filename]);
+
+  const handleSmartAction = async (action: SmartAction) => {
+    if (action.actionType === 'open_url') {
+      try {
+        await Linking.openURL(action.value);
+      } catch (e) {
+        Alert.alert('Link', action.value);
+      }
+    } else if (action.actionType === 'call') {
+      try {
+        await Linking.openURL(`tel:${action.value}`);
+      } catch (e) {
+        setActionFeedback(`Copied ${action.value}`);
+        setTimeout(() => setActionFeedback(null), 2000);
+      }
+    } else {
+      setActionFeedback(`Copied: ${action.value}`);
+      setTimeout(() => setActionFeedback(null), 2500);
+    }
+  };
+
+  const handleAskAi = (questionText?: string) => {
+    const q = (questionText || aiQuestion).trim();
+    if (!q || !screenshot) return;
+    const answer = AIService.askScreenshot(
+      q,
+      screenshot.ocrText || '',
+      screenshot.category
+    );
+    setAiAnswer(answer);
+  };
 
   if (!screenshot) return null;
 
@@ -236,6 +285,132 @@ export function ScreenshotDetailModal({
                 <Pressable onPress={handleAddTagSubmit} style={styles.addTagSubmitBtn}>
                   <Check color="#FFFFFF" width={16} height={16} strokeWidth={2.4} />
                 </Pressable>
+              </View>
+            )}
+
+            {/* AI Assist Card */}
+            {aiInsight && (
+              <View style={styles.aiCard}>
+                <View style={styles.aiCardHeader}>
+                  <View style={styles.aiTitleRow}>
+                    <Sparks color={BrandColors.primary} width={18} height={18} strokeWidth={2.5} />
+                    <Text style={styles.aiCardTitle}>Shotly AI Assist</Text>
+                  </View>
+                  <View style={styles.aiBadge}>
+                    <Text style={styles.aiBadgeText}>⚡ On-Device & Private</Text>
+                  </View>
+                </View>
+
+                {/* AI Summary */}
+                <Text style={styles.aiSummaryText}>{aiInsight.summary}</Text>
+
+                {/* Toast Feedback for Actions */}
+                {actionFeedback && (
+                  <View style={styles.actionFeedbackBox}>
+                    <Check color="#15803D" width={14} height={14} strokeWidth={3} />
+                    <Text style={styles.actionFeedbackText}>{actionFeedback}</Text>
+                  </View>
+                )}
+
+                {/* Smart Actions (if detected) */}
+                {aiInsight.smartActions.length > 0 && (
+                  <View style={styles.actionsSection}>
+                    <Text style={styles.aiSubheader}>Smart Actions</Text>
+                    <View style={styles.actionsRow}>
+                      {aiInsight.smartActions.map((act) => (
+                        <Pressable
+                          key={act.id}
+                          onPress={() => handleSmartAction(act)}
+                          style={({ pressed }) => [
+                            styles.smartActionChip,
+                            pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
+                          ]}>
+                          <Text style={styles.smartActionIcon}>{act.icon}</Text>
+                          <Text style={styles.smartActionLabel}>{act.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Suggested AI Tags */}
+                {aiInsight.suggestedTags.length > 0 && (
+                  <View style={styles.suggestedTagsSection}>
+                    <Text style={styles.aiSubheader}>Add AI Tags</Text>
+                    <View style={styles.suggestedTagsRow}>
+                      {aiInsight.suggestedTags.map((tag) => (
+                        <Pressable
+                          key={`ai-tag-${tag}`}
+                          onPress={() => addScreenshotTag(screenshot.id, tag.toLowerCase())}
+                          style={({ pressed }) => [
+                            styles.suggestedTagChip,
+                            pressed && { opacity: 0.7 },
+                          ]}>
+                          <Plus color={BrandColors.primary} width={12} height={12} strokeWidth={2.4} />
+                          <Text style={styles.suggestedTagText}>#{tag}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Ask AI about this Screenshot */}
+                <View style={styles.askAiSection}>
+                  <Text style={styles.aiSubheader}>Ask AI about this screenshot</Text>
+
+                  {/* Quick question pills */}
+                  <View style={styles.quickQuestionsRow}>
+                    <Pressable
+                      onPress={() => handleAskAi('What was the total or price?')}
+                      style={styles.quickQuestionChip}>
+                      <Text style={styles.quickQuestionText}>What's the total?</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleAskAi('What is the code or OTP?')}
+                      style={styles.quickQuestionChip}>
+                      <Text style={styles.quickQuestionText}>What's the code?</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleAskAi('When was this?')}
+                      style={styles.quickQuestionChip}>
+                      <Text style={styles.quickQuestionText}>When was this?</Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Ask Question Input */}
+                  <View style={styles.askInputRow}>
+                    <TextInput
+                      style={styles.askInput}
+                      placeholder="Ask anything about this image..."
+                      placeholderTextColor={BrandColors.muted}
+                      value={aiQuestion}
+                      onChangeText={setAiQuestion}
+                      onSubmitEditing={() => handleAskAi()}
+                      returnKeyType="send"
+                    />
+                    <Pressable
+                      disabled={!aiQuestion.trim()}
+                      onPress={() => handleAskAi()}
+                      style={({ pressed }) => [
+                        styles.askSubmitBtn,
+                        !aiQuestion.trim() && styles.askSubmitBtnDisabled,
+                        pressed && { opacity: 0.8 },
+                      ]}>
+                      <Send color="#FFFFFF" width={14} height={14} strokeWidth={2.4} />
+                    </Pressable>
+                  </View>
+
+                  {/* AI Inline Answer */}
+                  {aiAnswer && (
+                    <View style={styles.aiAnswerBox}>
+                      <View style={styles.aiAnswerHeader}>
+                        <Sparks color={BrandColors.primary} width={14} height={14} strokeWidth={2.5} />
+                        <Text style={styles.aiAnswerTitle}>AI Answer</Text>
+                      </View>
+                      <Text style={styles.aiAnswerText}>{aiAnswer}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             )}
 
@@ -634,5 +809,212 @@ const styles = StyleSheet.create({
   pickerRowTextSelected: {
     color: BrandColors.primary,
     fontWeight: '700',
+  },
+  // AI Assist Styles
+  aiCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#D7E2EE',
+    marginBottom: 20,
+    shadowColor: BrandColors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  aiTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
+  },
+  aiBadge: {
+    backgroundColor: '#EBF2FA',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  aiBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  aiSummaryText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: BrandColors.ink,
+    marginBottom: 14,
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: BrandColors.primary,
+  },
+  aiSubheader: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: BrandColors.muted,
+    marginBottom: 8,
+  },
+  actionFeedbackBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  actionFeedbackText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  actionsSection: {
+    marginBottom: 14,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  smartActionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+  smartActionIcon: {
+    fontSize: 14,
+  },
+  smartActionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  suggestedTagsSection: {
+    marginBottom: 14,
+  },
+  suggestedTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  suggestedTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  suggestedTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: BrandColors.ink,
+  },
+  askAiSection: {
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 12,
+  },
+  quickQuestionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  quickQuestionChip: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  quickQuestionText: {
+    fontSize: 12,
+    color: BrandColors.primary,
+    fontWeight: '600',
+  },
+  askInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  askInput: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: BrandColors.ink,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  askSubmitBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: BrandColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  askSubmitBtnDisabled: {
+    backgroundColor: '#CBD5E1',
+  },
+  aiAnswerBox: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginTop: 6,
+  },
+  aiAnswerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  aiAnswerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  aiAnswerText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: BrandColors.ink,
   },
 });
