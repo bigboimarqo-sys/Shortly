@@ -18,7 +18,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIService, SmartAction } from '@/services/ai-service';
+import { shareScreenshotImage } from '@/services/share-service';
 
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import {
@@ -85,6 +85,7 @@ export function ScreenshotDetailModal({
   const [tagInput, setTagInput] = useState('');
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // AI Assist States
   const [aiQuestion, setAiQuestion] = useState('');
@@ -137,14 +138,12 @@ export function ScreenshotDetailModal({
     CATEGORY_COLORS[screenshot.category] || CATEGORY_COLORS.Other;
 
   const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
     try {
-      await Share.share({
-        title: screenshot.filename,
-        message: `${screenshot.filename}\nCategory: ${screenshot.category}\n\nOCR Text:\n${screenshot.ocrText}`,
-        url: screenshot.uri,
-      });
-    } catch (e) {
-      // ignore
+      await shareScreenshotImage(screenshot.uri, screenshot.filename);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -208,10 +207,17 @@ export function ScreenshotDetailModal({
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Share screenshot"
+            accessibilityLabel="Share screenshot image"
             onPress={handleShare}
-            style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}>
-            <Text style={styles.shareButtonText}>Share</Text>
+            disabled={isSharing}
+            style={({ pressed }) => [
+              styles.headerButton,
+              styles.shareHeaderButton,
+              pressed && { opacity: 0.6 },
+              isSharing && { opacity: 0.5 },
+            ]}>
+            <ShareAndroid color={BrandColors.primary} width={18} height={18} strokeWidth={2.4} />
+            <Text style={styles.shareButtonText}>{isSharing ? 'Sharing...' : 'Share'}</Text>
           </Pressable>
         </View>
 
@@ -440,17 +446,36 @@ export function ScreenshotDetailModal({
               </Text>
             </View>
 
-            {/* Bottom Actions matching Screenshot detail.png */}
+            {/* Bottom Actions */}
             <View style={styles.buttonSection}>
+              {/* Primary Action: Share Screenshot as Image */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share screenshot image"
+                onPress={handleShare}
+                disabled={isSharing}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                  isSharing && { opacity: 0.6 },
+                ]}>
+                <View style={styles.buttonIconRow}>
+                  <ShareAndroid color="#FFFFFF" width={20} height={20} strokeWidth={2.4} />
+                  <Text style={styles.primaryButtonText}>
+                    {isSharing ? 'Sharing Image...' : 'Share Screenshot Image'}
+                  </Text>
+                </View>
+              </Pressable>
+
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Add to Collection"
                 onPress={() => setShowCollectionPicker(true)}
                 style={({ pressed }) => [
-                  styles.primaryButton,
+                  styles.secondaryButton,
                   pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                 ]}>
-                <Text style={styles.primaryButtonText}>Add to Collection</Text>
+                <Text style={styles.secondaryButtonText}>Add to Collection</Text>
               </Pressable>
 
               <Pressable
@@ -575,6 +600,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     minHeight: 44,
     justifyContent: 'center',
+  },
+  shareHeaderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   backButtonText: {
     fontSize: 17,
@@ -735,6 +765,26 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  buttonIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  secondaryButton: {
+    height: 54,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: BrandColors.ink,
     fontSize: 16,
     fontWeight: '700',
   },

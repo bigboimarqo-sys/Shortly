@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Check, NavArrowRight, Sparks, Trash, Xmark } from 'iconoir-react-native';
+import { Check, NavArrowRight, ShareAndroid, Sparks, Trash, Xmark } from 'iconoir-react-native';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
+import { shareScreenshotImage } from '@/services/share-service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 110;
@@ -790,11 +791,30 @@ export function CleanUpModal({ visible, onClose }: CleanUpModalProps) {
                 <Text style={styles.inspectTitle} numberOfLines={1}>
                   {inspectedScreenshot?.filename}
                 </Text>
-                <Pressable
-                  onPress={() => setInspectedScreenshot(null)}
-                  style={styles.inspectCloseBtn}>
-                  <Xmark color="#FFFFFF" width={24} height={24} strokeWidth={2.4} />
-                </Pressable>
+                <View style={styles.inspectActionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share screenshot image"
+                    onPress={() => {
+                      if (inspectedScreenshot) {
+                        shareScreenshotImage(
+                          inspectedScreenshot.uri,
+                          inspectedScreenshot.filename
+                        );
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.inspectShareBtn,
+                      pressed && { opacity: 0.7 },
+                    ]}>
+                    <ShareAndroid color="#FFFFFF" width={22} height={22} strokeWidth={2.4} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setInspectedScreenshot(null)}
+                    style={styles.inspectCloseBtn}>
+                    <Xmark color="#FFFFFF" width={24} height={24} strokeWidth={2.4} />
+                  </Pressable>
+                </View>
               </View>
 
               <View style={styles.inspectImageContainer}>
@@ -1539,6 +1559,15 @@ const styles = StyleSheet.create({
   },
   inspectCloseBtn: {
     padding: 8,
+  },
+  inspectActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  inspectShareBtn: {
+    padding: 8,
+    borderRadius: 8,
   },
   inspectImageContainer: {
     flex: 1,
