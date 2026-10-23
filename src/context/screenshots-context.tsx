@@ -41,6 +41,7 @@ export interface ScreenshotItem {
   width?: number;
   height?: number;
   needsReview?: boolean;
+  assetId?: string;
 }
 
 const isExpoGo =
@@ -376,7 +377,10 @@ interface ScreenshotsContextType {
   addCustomScreenshot: (item: ScreenshotItem) => Promise<void>;
   updateScreenshotCategory: (id: string, newCategory: ScreenshotCategory) => Promise<void>;
   addScreenshotTag: (id: string, tag: string) => Promise<void>;
-  deleteScreenshot: (id: string) => Promise<void>;
+  deleteScreenshot: (
+    id: string,
+    deleteFromDevice?: boolean
+  ) => Promise<{ success: boolean; deletedFromDevice: boolean }>;
   createCustomCollection: (name: string) => Promise<boolean>;
   markAsReviewed: (id: string) => Promise<void>;
 }
@@ -394,7 +398,7 @@ const ScreenshotsContext = createContext<ScreenshotsContextType>({
   addCustomScreenshot: async () => {},
   updateScreenshotCategory: async () => {},
   addScreenshotTag: async () => {},
-  deleteScreenshot: async () => {},
+  deleteScreenshot: async () => ({ success: true, deletedFromDevice: false }),
   createCustomCollection: async () => true,
   markAsReviewed: async () => {},
 });
@@ -497,6 +501,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             width: a.width,
             height: a.height,
             needsReview: false,
+            assetId: a.id,
           };
         });
 
@@ -625,6 +630,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
                   width: a.width,
                   height: a.height,
                   needsReview: false,
+                  assetId: a.id,
                 };
               });
 
@@ -700,14 +706,46 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
-  // 6. Delete screenshot
-  const deleteScreenshot = useCallback(async (id: string) => {
-    setScreenshots((prev) => {
-      const updated = prev.filter((item) => item.id !== id);
-      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+  // 6. Delete screenshot (with optional device gallery deletion permission check)
+  const deleteScreenshot = useCallback(
+    async (
+      id: string,
+      deleteFromDevice: boolean = false
+    ): Promise<{ success: boolean; deletedFromDevice: boolean }> => {
+      let deletedFromDevice = false;
+
+      if (deleteFromDevice && Platform.OS !== 'web') {
+        try {
+          const item = screenshots.find((s) => s.id === id);
+          const targetAssetId =
+            item?.assetId || (item?.id.startsWith('demo-') ? null : item?.id);
+          if (targetAssetId) {
+            const perm = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+            let canDelete = perm.granted;
+            if (!canDelete && perm.canAskAgain) {
+              const req = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
+              canDelete = req.granted;
+            }
+            if (canDelete) {
+              await MediaLibrary.deleteAssetsAsync([targetAssetId]);
+              deletedFromDevice = true;
+            }
+          }
+        } catch (err) {
+          console.warn('Device gallery deletion error:', err);
+        }
+      }
+
+      setScreenshots((prev) => {
+        const updated = prev.filter((item) => item.id !== id);
+        AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+
+      return { success: true, deletedFromDevice };
+    },
+    [screenshots]
+  );
 
   // 7. Create custom collection
   const createCustomCollection = useCallback(async (name: string): Promise<boolean> => {
