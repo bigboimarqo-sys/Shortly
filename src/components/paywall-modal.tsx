@@ -26,11 +26,14 @@ import {
 } from '@/components/payment-logos';
 import {
   AllowedPaymentMethod,
+  EntitlementService,
   FREE_MODE_DAYS,
   FREE_SCREENSHOT_LIMIT,
   SUBSCRIPTION_MODEL,
   SandboxPaymentScenario,
   SubscriptionPlan,
+  formatSubscriptionDate,
+  getPlanDisplayName,
 } from '@/services/entitlement-service';
 
 export type PaywallScreen =
@@ -97,16 +100,14 @@ export function PaywallModal({
   const planBillingClause = `7-day free trial, then ${currentPlanDetail.priceZAR}. Cancel anytime.`;
   const planAmountNumber = currentPlanDetail.priceAmount;
 
-  // Formatted date 7 days from today for success screen
-  const renewalDateFormatted = useMemo(() => {
-    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const day = d.getDate();
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  }, []);
+  // Computed subscription dates: 7 days trial + full billing period (1 year for annual, 1 month for monthly)
+  const { trialBillingDateFormatted, subscriptionExpiryDateFormatted } = useMemo(() => {
+    const dates = EntitlementService.calculateSubscriptionDates(selectedPlan);
+    return {
+      trialBillingDateFormatted: formatSubscriptionDate(dates.trialEnd),
+      subscriptionExpiryDateFormatted: formatSubscriptionDate(dates.expiry),
+    };
+  }, [selectedPlan]);
 
   // Reset screen states on modal close
   const handleClose = () => {
@@ -276,12 +277,13 @@ export function PaywallModal({
               </View>
 
               {/* Title */}
-              <Text style={styles.stateTitle}>You’re on Plus</Text>
+              <Text style={styles.stateTitle}>You’re on {currentPlanDetail.name}</Text>
 
               {/* Subtitle */}
               <Text style={styles.stateSubtitle}>
-                Your 7-day free trial has started. You’ll be charged R{planAmountNumber} on{' '}
-                {renewalDateFormatted}. Cancel anytime in Settings.
+                Your 7-day free trial has started. You won’t be charged today. First billing of R{planAmountNumber} will occur on{' '}
+                <Text style={{ fontWeight: '700', color: BrandColors.ink }}>{trialBillingDateFormatted}</Text>. Your subscription includes 7 days free plus your full billing period and will expire on{' '}
+                <Text style={{ fontWeight: '700', color: BrandColors.ink }}>{subscriptionExpiryDateFormatted}</Text>. Cancel anytime in Settings.
               </Text>
             </View>
 
@@ -1051,7 +1053,7 @@ export function PaywallModal({
                     ✅ Simulate Success (7-Day Trial)
                   </Text>
                   <Text style={styles.scenarioDesc}>
-                    Card/Wallet authorized with 7-day free trial on {selectedPlan === 'plus_annual' ? 'R349/yr' : 'R39/mo'}.
+                    Authorized with 7-day free trial on {currentPlanDetail.name} ({currentPlanDetail.priceZAR}). Valid until {subscriptionExpiryDateFormatted}.
                   </Text>
                 </Pressable>
 

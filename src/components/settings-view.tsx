@@ -21,6 +21,11 @@ import { useAuth } from '@/context/auth-context';
 import { ScreenshotCategory, useScreenshots } from '@/context/screenshots-context';
 import { useSubscription } from '@/context/subscription-context';
 import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
+import {
+  formatSubscriptionDate,
+  formatSubscriptionDateShort,
+  getPlanDisplayName,
+} from '@/services/entitlement-service';
 
 interface SettingsViewProps {
   onTabChange?: (tab: TabName) => void;
@@ -128,8 +133,8 @@ export function SettingsView({
                 <Text style={styles.rowValue}>
                   {isPlus
                     ? record.status === 'trialing'
-                      ? `Plus (Trial - ${remainingTrialDays}d left)`
-                      : 'Plus Active'
+                      ? `${getPlanDisplayName(record.plan)} (Trial · Exp ${formatSubscriptionDateShort(record.expiry)})`
+                      : `${getPlanDisplayName(record.plan)} (Expires ${formatSubscriptionDateShort(record.expiry)})`
                     : isFreeModeExpired
                     ? 'Free (7d Expired)'
                     : `Free (${remainingFreeDays}d left · 100 max)`}
@@ -194,6 +199,60 @@ export function SettingsView({
             </Pressable>
           </View>
 
+          {/* Active Subscription Details Card */}
+          {isPlus && (
+            <View style={styles.activeSubscriptionCard}>
+              <View style={styles.activeSubHeader}>
+                <View>
+                  <Text style={styles.activeSubPlanTitle}>{getPlanDisplayName(record.plan)}</Text>
+                  <Text style={styles.activeSubStatusBadge}>
+                    {record.status === 'trialing' ? '7-Day Free Trial Active' : 'Subscription Active'}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Manage Subscription"
+                  onPress={() => setShowPaywall(true)}
+                  style={styles.manageSubPill}>
+                  <Text style={styles.manageSubPillText}>Manage</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.activeSubDetails}>
+                {record.status === 'trialing' && record.trialEnd ? (
+                  <View style={styles.activeSubRow}>
+                    <Text style={styles.activeSubLabel}>First charge date:</Text>
+                    <Text style={styles.activeSubValue}>{formatSubscriptionDate(record.trialEnd)}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.activeSubRow}>
+                  <Text style={styles.activeSubLabel}>Valid until (Expiry):</Text>
+                  <Text style={[styles.activeSubValue, { fontWeight: '700', color: BrandColors.primary }]}>
+                    {formatSubscriptionDate(record.expiry)}
+                  </Text>
+                </View>
+
+                <View style={styles.activeSubRow}>
+                  <Text style={styles.activeSubLabel}>Billing amount:</Text>
+                  <Text style={styles.activeSubValue}>R{record.price} in ZAR</Text>
+                </View>
+
+                {record.paymentMethod ? (
+                  <View style={styles.activeSubRow}>
+                    <Text style={styles.activeSubLabel}>Payment method:</Text>
+                    <Text style={styles.activeSubValue}>
+                      {record.paymentMethod === 'apple_pay'
+                        ? 'Apple Pay'
+                        : record.paymentMethod === 'google_pay'
+                        ? 'Google Pay'
+                        : 'Credit / Debit Card'}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          )}
 
           {/* Permission Status & Diagnostic Controls */}
           <View style={styles.diagnosticCard}>
@@ -481,6 +540,68 @@ const styles = StyleSheet.create({
       web: "'Space Grotesk', system-ui, sans-serif",
       default: undefined,
     }),
+  },
+  activeSubscriptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: BrandColors.primary,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: BrandColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  activeSubHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+  },
+  activeSubPlanTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: BrandColors.ink,
+    letterSpacing: -0.3,
+  },
+  activeSubStatusBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+    marginTop: 2,
+  },
+  manageSubPill: {
+    backgroundColor: '#E8F1FA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  manageSubPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  activeSubDetails: {
+    gap: 8,
+  },
+  activeSubRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activeSubLabel: {
+    fontSize: 13,
+    color: BrandColors.muted,
+  },
+  activeSubValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: BrandColors.ink,
   },
   diagnosticCard: {
     backgroundColor: '#FFFFFF',

@@ -188,7 +188,18 @@ export const EntitlementService = {
       const raw = await AsyncStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
       if (raw) {
         const parsed: SubscriptionRecord = JSON.parse(raw);
-        // Verify expiry
+        // If 7-day trial ended but overall subscription period is still valid, roll over to active
+        if (
+          parsed.status === 'trialing' &&
+          parsed.trialEnd &&
+          parsed.trialEnd < Date.now() &&
+          parsed.expiry > Date.now()
+        ) {
+          parsed.status = 'active';
+          await AsyncStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(parsed));
+        }
+
+        // Verify full expiration
         if (parsed.expiry > 0 && parsed.expiry < Date.now()) {
           parsed.status = 'expired';
           await AsyncStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(parsed));
@@ -326,8 +337,43 @@ export const EntitlementService = {
   },
 
   /**
+   * Computes the exact trial end date and full subscription expiry date.
+   * - trialEnd: 7 days from now (when trial ends and first charge occurs)
+   * - expiry: trialEnd + subscription billing period (1 year for annual, 1 month for monthly)
+   * Example: Pro Annual started on 23 Oct 2026 -> First billing on 30 Oct 2026 -> Expires on 30 Oct 2027.
+   */
+  calculateSubscriptionDates(
+    plan: SubscriptionPlan,
+    fromTimestamp: number = Date.now()
+  ): { trialEnd: number; expiry: number } {
+    if (plan === 'free') {
+      const freeEnd = cachedFreeStartTime + FREE_MODE_DAYS * 24 * 60 * 60 * 1000;
+      return { trialEnd: freeEnd, expiry: freeEnd };
+    }
+
+    const planDetail = SUBSCRIPTION_MODEL.find((p) => p.id === plan);
+    const trialDays = planDetail?.trialDays ?? 7;
+    const trialEnd = fromTimestamp + trialDays * 24 * 60 * 60 * 1000;
+
+    const expiryDate = new Date(trialEnd);
+    if (planDetail?.period === 'year') {
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    } else if (planDetail?.period === 'month') {
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+    } else {
+      expiryDate.setDate(expiryDate.getDate() + 30);
+    }
+
+    return {
+      trialEnd,
+      expiry: expiryDate.getTime(),
+    };
+  },
+
+  /**
    * Starts a 7-day free trial on Card or Wallets (Google Pay / Apple Pay)
-   * for any paid plan in the Subscription Model. Instant EFT disallowed.
+   * for any paid plan in the Subscription Model.
+   * Crucial rule: Expiry is 7-day trial + full billing period (1 year for annual, 1 month for monthly).
    */
   async activateTrial(
     plan: SubscriptionPlan,
@@ -338,9 +384,8 @@ export const EntitlementService = {
     }
 
     const planDetail = SUBSCRIPTION_MODEL.find((p) => p.id === plan);
-    const trialDays = planDetail?.trialDays ?? 7;
     const now = Date.now();
-    const trialEnd = now + trialDays * 24 * 60 * 60 * 1000;
+    const { trialEnd, expiry } = this.calculateSubscriptionDates(plan, now);
     const price = planDetail?.priceAmount ?? 349;
     const providerReference = `shotly_trial_${plan}_${Date.now()}_${Math.random()
       .toString(36)
@@ -349,7 +394,7 @@ export const EntitlementService = {
     const newRecord: SubscriptionRecord = {
       plan,
       status: 'trialing',
-      expiry: trialEnd,
+      expiry,
       trialEnd,
       providerReference,
       paymentMethod,
@@ -364,7 +409,7 @@ export const EntitlementService = {
 
   /**
    * Sandbox payment simulator supporting all checkout outcomes:
-   * 1. 'success': 7-day trial activated on Card/Wallets
+   * 1. 'success': 7-day trial activated on Card/Wallets with full period added to expiry
    * 2. 'declined': Card / bank declined payment
    * 3. 'cancelled': User dismissed the checkout flow
    * 4. 'failed': Network or provider timeout
@@ -381,19 +426,21 @@ export const EntitlementService = {
       case 'success': {
         const record = await this.activateTrial(plan, paymentMethod);
         const planDetail = SUBSCRIPTION_MODEL.find((p) => p.id === plan);
+        const trialEndDateFormatted = formatSubscriptionDate(record.trialEnd || 0);
+        const expiryDateFormatted = formatSubscriptionDate(record.expiry);
         return {
           success: true,
           scenario: 'success',
           record,
-          message: `7-Day Free Trial activated successfully on ${
+          message: `7-Day Free Trial activated on ${
             paymentMethod === 'apple_pay'
               ? 'Apple Pay'
               : paymentMethod === 'google_pay'
               ? 'Google Pay'
               : 'Card'
-          }! Your ${planDetail?.name || 'Plus'} plan will renew at ${
+          }! You won’t be charged today. First billing of ${
             planDetail?.priceZAR || 'R349 / year'
-          } in ZAR after 7 days. Cancel anytime.`,
+          } is on ${trialEndDateFormatted}. Your subscription will run until ${expiryDateFormatted}. Cancel anytime.`,
         };
       }
 
@@ -472,3 +519,51 @@ export const EntitlementService = {
     });
   },
 };
+
+export function formatSubscriptionDate(timestamp: number): string {
+  if (!timestamp || timestamp <= 0) return 'N/A';
+  const d = new Date(timestamp);
+  const day = d.getDate();
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+export function formatSubscriptionDateShort(timestamp: number): string {
+  if (!timestamp || timestamp <= 0) return 'N/A';
+  const d = new Date(timestamp);
+  const day = d.getDate();
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+export function getPlanDisplayName(plan: SubscriptionPlan): string {
+  const detail = SUBSCRIPTION_MODEL.find((p) => p.id === plan);
+  return detail ? detail.name : 'Free';
+}
+

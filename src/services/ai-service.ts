@@ -357,13 +357,13 @@ export class AIService {
 All paid plans include a 7-day free trial on Card (Visa/Mastercard) and digital wallets (Apple Pay, Google Pay, Samsung Pay). Cancel anytime!`;
       actionLink = { type: 'paywall', label: 'View Subscription Model' };
     }
-    // B. Free Trial & Cancellation
-    else if (msg.includes('trial') || msg.includes('cancel') || msg.includes('refund') || msg.includes('7 day') || msg.includes('7-day')) {
-      text = `Here is how trials work on Shotly:
+    // B. Free Trial, Duration & Cancellation
+    else if (msg.includes('trial') || msg.includes('cancel') || msg.includes('refund') || msg.includes('7 day') || msg.includes('7-day') || msg.includes('expire') || msg.includes('expiry') || msg.includes('duration')) {
+      text = `Here is how trials and billing durations work on Shotly:
 • Free Mode: The Free plan runs for 7 days with a limit of 100 screenshots.
 • Paid Plans Trial: 7-day free trial on Plus, Pro, and Team plans with full features.
-• Supported on Card and digital wallets (Google Pay, Apple Pay, Samsung Pay). Instant EFT is excluded.
-• You can cancel anytime directly from Settings before day 7 with zero penalty.`;
+• Full Duration Added: When you start an annual or monthly subscription, your 7-day free trial is added to the full billing period. For example, subscribing to Pro Annual (R699/year) gives you 7 days trial + 1 full year (expiring exactly 1 year after the trial ends, e.g., 30 October 2027). For monthly plans, it is 7 days trial + 1 month.
+• You won't be charged today. First billing occurs on day 7, and you can cancel anytime before then with zero penalty.`;
       actionLink = { type: 'settings', label: 'Manage Subscription in Settings' };
     }
     // C. Privacy & Security
