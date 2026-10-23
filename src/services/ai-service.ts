@@ -414,9 +414,20 @@ You can swipe to review and delete them safely!`;
 Note: Instant EFT is not supported for free trials.`;
       actionLink = { type: 'paywall', label: 'Choose Payment Method' };
     }
+    // I. Name & Identity ("Who are you?", "What's your name?", "Marcus")
+    else if (msg.includes('who are you') || msg.includes('your name') || msg.includes('what is your name') || msg.includes('marcus') || msg.includes('who made you')) {
+      text = `I'm Marcus, your dedicated 24/7 AI Assistant for Shotly!
+I'm built right into the app to help you:
+• Search & understand your screenshots using on-device OCR
+• Answer questions about receipts, documents, and OTPs
+• Guide you with subscription plans in ZAR (R349/year, R39/month)
+• Safeguard your 100% on-device privacy guarantee
+
+How can I help you today?`;
+    }
     // Default empathetic greeting & options
     else {
-      text = `Hello! I'm your Shotly 24/7 AI Support Agent. 
+      text = `Hello! I'm Marcus, your Shotly 24/7 AI Support Assistant. 
 I can help you with:
 • Subscription plans & 7-day free trial (R349/year, R39/month in ZAR)
 • On-device OCR text search & AI screenshot queries

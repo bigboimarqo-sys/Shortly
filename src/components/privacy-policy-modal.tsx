@@ -287,7 +287,7 @@ export function PrivacyPolicyModal({ visible, onClose }: PrivacyPolicyModalProps
                   <Text style={styles.contactTitle}>Shotly Information Officer</Text>
                   <Text style={styles.contactText}>Email: privacy@shotly.co.za</Text>
                   <Text style={styles.contactText}>Physical Address: Cape Town, South Africa</Text>
-                  <Text style={styles.contactText}>Support Desk: Accessible 24/7 via Settings &gt; 24/7 Live AI Support</Text>
+                  <Text style={styles.contactText}>Support Desk: Accessible 24/7 with Marcus via Settings &gt; 24/7 Live AI Support</Text>
                 </View>
               </View>
             )}

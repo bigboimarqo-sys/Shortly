@@ -189,14 +189,14 @@ export function MainHomeView({
               {/* 24/7 Live AI Customer Support Header Button */}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Open 24/7 Live AI Support"
+                accessibilityLabel="Open 24/7 Live AI Support with Marcus"
                 onPress={() => setShowAiSupport(true)}
                 style={({ pressed }) => [
                   styles.aiSupportHeaderBtn,
                   pressed && { opacity: 0.8 },
                 ]}>
                 <HeadsetHelp color={BrandColors.primary} width={15} height={15} strokeWidth={2.4} />
-                <Text style={styles.aiSupportHeaderBtnText}>24/7 AI</Text>
+                <Text style={styles.aiSupportHeaderBtnText}>Marcus AI</Text>
                 <View style={styles.onlineDotMini} />
               </Pressable>
 

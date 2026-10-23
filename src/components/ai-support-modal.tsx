@@ -58,7 +58,7 @@ export function AISupportModal({
     {
       id: 'welcome-msg',
       sender: 'ai',
-      text: "👋 Hi! I'm your Shotly 24/7 AI Support Assistant. I'm always online to help you with subscriptions, pricing in ZAR, on-device OCR search, permissions, and privacy. How can I assist you today?",
+      text: "👋 Hi! I'm Marcus, your Shotly 24/7 AI Assistant. I'm always online to help you with subscriptions, pricing in ZAR, on-device OCR search, permissions, and privacy. How can I assist you today?",
       timestamp: Date.now(),
     },
   ]);
@@ -129,12 +129,12 @@ export function AISupportModal({
               </View>
               <View>
                 <View style={styles.titleRow}>
-                  <Text style={styles.agentTitle}>Shotly AI Support</Text>
+                  <Text style={styles.agentTitle}>Marcus · AI Assistant</Text>
                   <View style={styles.liveTag}>
                     <Text style={styles.liveTagText}>24/7 LIVE</Text>
                   </View>
                 </View>
-                <Text style={styles.statusSubtitle}>🟢 Always Online · Instant Replies</Text>
+                <Text style={styles.statusSubtitle}>🟢 Marcus is Online · Instant Replies</Text>
               </View>
             </View>
 
@@ -229,7 +229,7 @@ export function AISupportModal({
                 </View>
                 <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
                   <ActivityIndicator size="small" color={BrandColors.primary} />
-                  <Text style={styles.typingText}>Shotly AI is typing...</Text>
+                  <Text style={styles.typingText}>Marcus is thinking...</Text>
                 </View>
               </View>
             )}
@@ -238,7 +238,7 @@ export function AISupportModal({
           {/* Privacy Note */}
           <View style={styles.privacyNoteBox}>
             <Text style={styles.privacyNoteText}>
-              🔒 Secure 24/7 AI Support. Your screenshot images and OCR text are never sent to support.
+              🔒 Private & on-device. Conversations with Marcus and your screenshot data are never sent to external servers.
             </Text>
           </View>
 
@@ -247,7 +247,7 @@ export function AISupportModal({
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Ask a question about Shotly..."
+              placeholder="Ask Marcus a question about Shotly..."
               placeholderTextColor="#9CA3AF"
               style={styles.textInput}
               multiline={false}

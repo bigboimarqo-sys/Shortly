@@ -99,13 +99,13 @@ export function SettingsView({
               </View>
               <View style={styles.aiSupportTextContent}>
                 <View style={styles.aiSupportTitleRow}>
-                  <Text style={styles.aiSupportTitle}>24/7 Live AI Support</Text>
+                  <Text style={styles.aiSupportTitle}>Marcus · 24/7 AI Support</Text>
                   <View style={styles.liveBadge}>
                     <Text style={styles.liveBadgeText}>ONLINE</Text>
                   </View>
                 </View>
                 <Text style={styles.aiSupportSubtitle}>
-                  Instant answers on pricing in ZAR, OCR, &amp; subscriptions
+                  Ask Marcus about pricing in ZAR, OCR, &amp; subscriptions
                 </Text>
               </View>
             </View>

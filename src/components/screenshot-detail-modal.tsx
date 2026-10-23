@@ -294,7 +294,7 @@ export function ScreenshotDetailModal({
                 <View style={styles.aiCardHeader}>
                   <View style={styles.aiTitleRow}>
                     <Sparks color={BrandColors.primary} width={18} height={18} strokeWidth={2.5} />
-                    <Text style={styles.aiCardTitle}>Shotly AI Assist</Text>
+                    <Text style={styles.aiCardTitle}>Marcus · AI Assist</Text>
                   </View>
                   <View style={styles.aiBadge}>
                     <Text style={styles.aiBadgeText}>⚡ On-Device & Private</Text>
@@ -356,7 +356,7 @@ export function ScreenshotDetailModal({
 
                 {/* Ask AI about this Screenshot */}
                 <View style={styles.askAiSection}>
-                  <Text style={styles.aiSubheader}>Ask AI about this screenshot</Text>
+                  <Text style={styles.aiSubheader}>Ask Marcus about this screenshot</Text>
 
                   {/* Quick question pills */}
                   <View style={styles.quickQuestionsRow}>
@@ -381,7 +381,7 @@ export function ScreenshotDetailModal({
                   <View style={styles.askInputRow}>
                     <TextInput
                       style={styles.askInput}
-                      placeholder="Ask anything about this image..."
+                      placeholder="Ask Marcus anything about this image..."
                       placeholderTextColor={BrandColors.muted}
                       value={aiQuestion}
                       onChangeText={setAiQuestion}
@@ -405,7 +405,7 @@ export function ScreenshotDetailModal({
                     <View style={styles.aiAnswerBox}>
                       <View style={styles.aiAnswerHeader}>
                         <Sparks color={BrandColors.primary} width={14} height={14} strokeWidth={2.5} />
-                        <Text style={styles.aiAnswerTitle}>AI Answer</Text>
+                        <Text style={styles.aiAnswerTitle}>Marcus Answer</Text>
                       </View>
                       <Text style={styles.aiAnswerText}>{aiAnswer}</Text>
                     </View>
