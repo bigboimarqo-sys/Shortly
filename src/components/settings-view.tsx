@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AISupportModal } from '@/components/ai-support-modal';
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { PaywallModal } from '@/components/paywall-modal';
+import { PrivacyDataSheet } from '@/components/privacy-data-sheet';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { ScreenshotCategory, useScreenshots } from '@/context/screenshots-context';
@@ -54,6 +55,7 @@ export function SettingsView({
   const [showAiSupport, setShowAiSupport] = useState(false);
   const [autoCapture, setAutoCapture] = useState(true);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [showPrivacyDataSheet, setShowPrivacyDataSheet] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -154,15 +156,12 @@ export function SettingsView({
             </Pressable>
 
             <Pressable
-              onPress={() =>
-                Alert.alert(
-                  '100% On-Device Privacy',
-                  'Shotly processes all screenshots and OCR text directly on your device. Your photos and text are never sent to external servers.'
-                )
-              }
+              accessibilityRole="button"
+              accessibilityLabel="Open Privacy and data options"
+              onPress={() => setShowPrivacyDataSheet(true)}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
-              <Text style={styles.rowLabel}>Privacy & Security</Text>
-              <Text style={styles.rowValue}>On-device</Text>
+              <Text style={styles.rowLabel}>Privacy and data</Text>
+              <Text style={styles.rowValue}>On-device →</Text>
             </Pressable>
 
             <Pressable
@@ -263,6 +262,12 @@ export function SettingsView({
         onOpenPaywall={() => setShowPaywall(true)}
         onOpenPermissions={handleResetPermissions}
         onOpenCollections={() => onTabChange && onTabChange('Collections')}
+      />
+
+      {/* Privacy and Data Sheet (Settings Privacy and data.png) */}
+      <PrivacyDataSheet
+        visible={showPrivacyDataSheet}
+        onClose={() => setShowPrivacyDataSheet(false)}
       />
 
       {/* 10 Smart Categories Modal */}
