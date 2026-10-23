@@ -46,6 +46,12 @@ export default function RootIndexScreen() {
     }
   }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized]);
 
+  useEffect(() => {
+    if (isGranted && currentView === 'permissions') {
+      setCurrentView('main');
+    }
+  }, [isGranted, currentView]);
+
   if (authLoading || permissionsLoading) {
     return (
       <View style={styles.loadingContainer}>

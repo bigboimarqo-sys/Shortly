@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
+import { useScreenshots } from '@/hooks/use-screenshots';
 
 interface PermissionsViewProps {
   onAllowAccess?: () => void;
@@ -24,6 +25,7 @@ export function PermissionsView({
   onComplete,
 }: PermissionsViewProps) {
   const { requestFullAccess, requestLimitedAccess } = usePhotoPermissions();
+  const { pickScreenshotsFromPhone } = useScreenshots();
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleAllowFullAccess = async () => {
@@ -32,10 +34,11 @@ export function PermissionsView({
       await requestFullAccess();
       if (onAllowAccess) {
         onAllowAccess();
-      }
-      if (onComplete) {
+      } else if (onComplete) {
         onComplete();
       }
+    } catch (err) {
+      if (onComplete) onComplete();
     } finally {
       setIsRequesting(false);
     }
@@ -45,12 +48,20 @@ export function PermissionsView({
     setIsRequesting(true);
     try {
       await requestLimitedAccess();
+      if (Platform.OS !== 'web') {
+        try {
+          await pickScreenshotsFromPhone();
+        } catch (e) {
+          // ignore picker cancellation
+        }
+      }
       if (onSelectPhotosOnly) {
         onSelectPhotosOnly();
-      }
-      if (onComplete) {
+      } else if (onComplete) {
         onComplete();
       }
+    } catch (err) {
+      if (onComplete) onComplete();
     } finally {
       setIsRequesting(false);
     }

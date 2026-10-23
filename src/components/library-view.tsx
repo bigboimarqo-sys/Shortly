@@ -1,7 +1,6 @@
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -9,7 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,14 +21,21 @@ interface LibraryViewProps {
 }
 
 export function LibraryView({ onTabChange }: LibraryViewProps) {
-  const { screenshots, isLoading, refreshScreenshots } = useScreenshots();
+  const { screenshots, isLoading, refreshScreenshots, pickScreenshotsFromPhone } = useScreenshots();
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
 
-  const filters = ['All', 'Receipts', 'Chats', 'Tickets', 'Maps'];
+  const filters = ['All', 'Receipts', 'Recipes', 'Work', 'Chats', 'Tickets', 'Maps'];
 
-  // Show fetched screenshots or minimum 18 slots
-  const displayCount = Math.max(screenshots.length, 18);
+  const filteredScreenshots =
+    activeFilter === 'All'
+      ? screenshots
+      : screenshots.filter(
+        (s) => s.category.toLowerCase() === activeFilter.toLowerCase()
+      );
+
+  // Show filtered screenshots or minimum 25 slots matching Library.png
+  const displayCount = Math.max(filteredScreenshots.length, 18);
   const items = Array.from({ length: displayCount }, (_, i) => i);
 
   return (
@@ -41,7 +47,9 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={refreshScreenshots}
+            onRefresh={() => {
+              refreshScreenshots();
+            }}
             tintColor={BrandColors.primary}
             colors={[BrandColors.primary]}
           />
@@ -50,13 +58,27 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerRow}>
-              <Text style={styles.title}>Library</Text>
-              {isLoading && <ActivityIndicator size="small" color={BrandColors.primary} />}
+              <View>
+                <Text style={styles.title}>Library</Text>
+                <Text style={styles.subtitle}>
+                  {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'screenshot' : 'screenshots'}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  pickScreenshotsFromPhone();
+                }}
+                style={styles.importButton}>
+                <Text style={styles.importButtonText}>+ Import</Text>
+              </Pressable>
             </View>
           </View>
 
           {/* Filter Pills */}
-          <View style={styles.filterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}>
             {filters.map((filter) => {
               const isSelected = activeFilter === filter;
               return (
@@ -78,12 +100,12 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           {/* 3-column Grid matching Library.png */}
           <View style={styles.grid}>
             {items.map((index) => {
-              const item = screenshots[index];
+              const item = filteredScreenshots[index];
               return (
                 <Pressable
                   key={item?.id ?? index}
@@ -97,7 +119,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                       source={{ uri: item.uri }}
                       style={styles.gridImage}
                       contentFit="cover"
-                      transition={200}
+                      transition={150}
                       cachePolicy="memory-disk"
                     />
                   ) : (
@@ -109,6 +131,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
           </View>
         </View>
       </ScrollView>
+
 
       {/* Screenshot Full Preview Modal */}
       {selectedScreenshot && (
@@ -187,11 +210,27 @@ const styles = StyleSheet.create({
       default: undefined,
     }),
   },
+  subtitle: {
+    fontSize: 13,
+    color: BrandColors.muted,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  importButton: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  importButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   filterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 20,
   },
   filterPill: {
     paddingHorizontal: 20,
