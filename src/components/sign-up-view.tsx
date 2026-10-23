@@ -19,14 +19,12 @@ import { useAuth } from '@/context/auth-context';
 
 interface SignUpViewProps {
   onSignInPress: () => void;
-  onContinueWithoutAccount?: () => void;
   onSuccess?: () => void;
   onBack?: () => void;
 }
 
 export function SignUpView({
   onSignInPress,
-  onContinueWithoutAccount,
   onSuccess,
   onBack,
 }: SignUpViewProps) {
@@ -94,8 +92,8 @@ export function SignUpView({
           <View style={styles.header}>
             <Text style={styles.title}>Create your account</Text>
             <Text style={styles.subtitle}>
-              Your screenshots never leave your phone.{'\n'}
-              An account only keeps your plan safe.
+              Register to start your 7-day free trial.{'\n'}
+              Your screenshots stay 100% private on your phone.
             </Text>
           </View>
 
@@ -164,11 +162,11 @@ export function SignUpView({
                 isLoading && styles.buttonDisabled,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Create account">
+              accessibilityLabel="Create account and start 7-day trial">
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.primaryButtonText}>Create account</Text>
+                <Text style={styles.primaryButtonText}>Create account &amp; start trial</Text>
               )}
             </Pressable>
 
@@ -200,17 +198,6 @@ export function SignUpView({
                 <Text style={styles.linkHighlight}>Sign in</Text>
               </Text>
             </Pressable>
-
-            {onContinueWithoutAccount && (
-              <Pressable
-                onPress={onContinueWithoutAccount}
-                style={({ pressed }) => [styles.linkButton, pressed && { opacity: 0.7 }]}
-                accessibilityRole="button">
-                <Text style={styles.continueWithoutAccountText}>
-                  Continue without an account
-                </Text>
-              </Pressable>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -372,10 +359,5 @@ const styles = StyleSheet.create({
   linkHighlight: {
     color: BrandColors.primary,
     fontWeight: '700',
-  },
-  continueWithoutAccountText: {
-    fontSize: 14,
-    color: BrandColors.primary,
-    fontWeight: '600',
   },
 });

@@ -274,39 +274,23 @@ export function SettingsView({
           </View>
 
           {/* Account Status / Sign Out */}
-          {isAuthenticated ? (
-            <View style={styles.accountCard}>
-              <Text style={styles.accountTitle}>Account</Text>
-              <Text style={styles.accountEmail}>{user?.email}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Sign Out"
-                onPress={handleSignOut}
-                style={({ pressed }) => [
-                  styles.smallButton,
-                  styles.signOutButton,
-                  pressed && { opacity: 0.8 },
-                ]}>
-                <Text style={styles.signOutButtonText}>Sign Out</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.accountCard}>
-              <Text style={styles.accountTitle}>Guest Mode</Text>
-              <Text style={styles.accountEmail}>Using Shotly without an account</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Sign In"
-                onPress={onSignOutComplete}
-                style={({ pressed }) => [
-                  styles.smallButton,
-                  styles.signInButton,
-                  pressed && { opacity: 0.8 },
-                ]}>
-                <Text style={styles.signInButtonText}>Sign In / Sign Up</Text>
-              </Pressable>
-            </View>
-          )}
+          <View style={styles.accountCard}>
+            <Text style={styles.accountTitle}>Account</Text>
+            <Text style={styles.accountEmail}>
+              {user?.email || 'Active Account (7-day trial)'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign Out"
+              onPress={handleSignOut}
+              style={({ pressed }) => [
+                styles.smallButton,
+                styles.signOutButton,
+                pressed && { opacity: 0.8 },
+              ]}>
+              <Text style={styles.signOutButtonText}>Sign Out</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 

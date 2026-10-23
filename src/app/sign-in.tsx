@@ -19,7 +19,6 @@ export default function SignInScreen() {
   return (
     <SignInView
       onSignUpPress={() => router.replace('/sign-up' as any)}
-      onContinueWithoutAccount={handleNext}
       onSuccess={handleNext}
       onBack={() => router.back()}
     />

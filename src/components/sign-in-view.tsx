@@ -19,7 +19,6 @@ import { useAuth } from '@/context/auth-context';
 
 interface SignInViewProps {
   onSignUpPress: () => void;
-  onContinueWithoutAccount: () => void;
   onForgotPasswordPress?: () => void;
   onSuccess?: () => void;
   onBack?: () => void;
@@ -27,7 +26,6 @@ interface SignInViewProps {
 
 export function SignInView({
   onSignUpPress,
-  onContinueWithoutAccount,
   onForgotPasswordPress,
   onSuccess,
   onBack,
@@ -85,8 +83,8 @@ export function SignInView({
           <View style={styles.header}>
             <Text style={styles.title}>Welcome back</Text>
             <Text style={styles.subtitle}>
-              Sign in to manage your subscription and{'\n'}
-              keep your plan on any device.
+              Sign in to access your library and{'\n'}
+              active 7-day free trial.
             </Text>
           </View>
 
@@ -174,15 +172,6 @@ export function SignInView({
               <Text style={styles.footerText}>
                 New to Shotly?{' '}
                 <Text style={styles.linkHighlight}>Create an account</Text>
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={onContinueWithoutAccount}
-              style={({ pressed }) => [styles.linkButton, pressed && { opacity: 0.7 }]}
-              accessibilityRole="button">
-              <Text style={styles.continueWithoutAccountText}>
-                Continue without an account
               </Text>
             </Pressable>
           </View>
@@ -310,10 +299,5 @@ const styles = StyleSheet.create({
   linkHighlight: {
     color: BrandColors.primary,
     fontWeight: '700',
-  },
-  continueWithoutAccountText: {
-    fontSize: 15,
-    color: BrandColors.primary,
-    fontWeight: '600',
   },
 });

@@ -38,13 +38,18 @@ export default function RootIndexScreen() {
         } else {
           setCurrentView('main');
         }
-      } else if (isGranted) {
-        // User already configured permissions in past session
-        setCurrentView('main');
+      } else {
+        // Users must register or sign in to start the 7-day trial - no guest mode bypass
+        setCurrentView('onboarding');
       }
       setHasInitialized(true);
+    } else {
+      // If user logs out, redirect to signin
+      if (!isAuthenticated && (currentView === 'main' || currentView === 'permissions')) {
+        setCurrentView('signin');
+      }
     }
-  }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized]);
+  }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized, currentView]);
 
   useEffect(() => {
     if (isGranted && currentView === 'permissions') {
@@ -78,13 +83,6 @@ export default function RootIndexScreen() {
       <View style={styles.fullScreen}>
         <SignUpView
           onSignInPress={() => setCurrentView('signin')}
-          onContinueWithoutAccount={() => {
-            if (!isGranted) {
-              setCurrentView('permissions');
-            } else {
-              setCurrentView('main');
-            }
-          }}
           onSuccess={() => {
             if (!isGranted) {
               setCurrentView('permissions');
@@ -104,13 +102,6 @@ export default function RootIndexScreen() {
       <View style={styles.fullScreen}>
         <SignInView
           onSignUpPress={() => setCurrentView('signup')}
-          onContinueWithoutAccount={() => {
-            if (!isGranted) {
-              setCurrentView('permissions');
-            } else {
-              setCurrentView('main');
-            }
-          }}
           onSuccess={() => {
             if (!isGranted) {
               setCurrentView('permissions');
@@ -183,7 +174,7 @@ export default function RootIndexScreen() {
         <SettingsView
           onTabChange={setActiveTab}
           onNavigateToPermissions={() => setCurrentView('permissions')}
-          onSignOutComplete={() => setCurrentView('onboarding')}
+          onSignOutComplete={() => setCurrentView('signin')}
         />
       )}
     </View>

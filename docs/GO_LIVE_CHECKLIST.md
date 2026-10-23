@@ -61,8 +61,9 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 - [ ] **Authentication Settings**:
   - Enable Email / Password and Magic Link in Supabase Auth Settings.
   - Add App Redirect URLs for deep linking: `shortly://auth/callback`.
-- [ ] **Guest Mode Verification**:
-  - Ensure users can bypass authentication entirely and organise up to 100 screenshots during the 7-day Free mode without an account.
+- [ ] **Mandatory Registration / Authentication**:
+  - Verify that guest mode bypass is completely disabled: users cannot skip auth.
+  - Ensure all users must register or sign in to activate their 7-day free trial (up to 100 screenshots during trial).
 
 ---
 
