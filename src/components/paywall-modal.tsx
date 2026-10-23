@@ -26,6 +26,7 @@ export type PaywallScreen =
   | 'main'
   | 'choose_payment'
   | 'pay_by_card'
+  | 'pay_with_wallet'
   | 'pay_with_payfast'
   | 'payment_error'
   | 'success';
@@ -53,6 +54,8 @@ export function PaywallModal({
 
   // Navigation flow state
   const [currentScreen, setCurrentScreen] = useState<PaywallScreen>('main');
+  const [lastAttemptedScreen, setLastAttemptedScreen] =
+    useState<PaywallScreen>('pay_by_card');
   const [selectedPlan, setSelectedPlan] = useState<'plus_annual' | 'plus_monthly'>(
     'plus_annual'
   );
@@ -123,6 +126,7 @@ export function PaywallModal({
 
   // 1. Submit Card Trial Payment (Image 1)
   const handleCardSubmit = async () => {
+    setLastAttemptedScreen('pay_by_card');
     // If card number ends with 0000, simulate decline for testing
     const digits = cardNumber.replace(/\s/g, '');
     if (digits.endsWith('0000')) {
@@ -149,58 +153,54 @@ export function PaywallModal({
   const handleSelectPaymentMethod = async (method: string) => {
     if (method === 'card') {
       setSelectedMethod('card');
+      setLastAttemptedScreen('pay_by_card');
       setCurrentScreen('pay_by_card');
     } else if (method === 'payfast') {
+      setSelectedMethod('card');
+      setLastAttemptedScreen('pay_with_payfast');
       setCurrentScreen('pay_with_payfast');
-    } else if (method === 'google_pay') {
-      setSelectedMethod('google_pay');
-      setIsProcessing(true);
-      try {
-        const res = await simulateSandboxCheckout('success', selectedPlan, 'google_pay');
-        if (res.success) {
-          setCurrentScreen('success');
-        } else {
-          setCurrentScreen('payment_error');
-        }
-      } catch (e) {
-        setCurrentScreen('payment_error');
-      } finally {
-        setIsProcessing(false);
-      }
-    } else if (method === 'apple_pay') {
-      setSelectedMethod('apple_pay');
-      setIsProcessing(true);
-      try {
-        const res = await simulateSandboxCheckout('success', selectedPlan, 'apple_pay');
-        if (res.success) {
-          setCurrentScreen('success');
-        } else {
-          setCurrentScreen('payment_error');
-        }
-      } catch (e) {
-        setCurrentScreen('payment_error');
-      } finally {
-        setIsProcessing(false);
-      }
-    } else if (method === 'samsung_pay') {
-      setIsProcessing(true);
-      try {
-        const res = await simulateSandboxCheckout('success', selectedPlan, 'card');
-        if (res.success) {
-          setCurrentScreen('success');
-        } else {
-          setCurrentScreen('payment_error');
-        }
-      } catch (e) {
-        setCurrentScreen('payment_error');
-      } finally {
-        setIsProcessing(false);
-      }
+    } else if (
+      method === 'wallet' ||
+      method === 'google_pay' ||
+      method === 'apple_pay' ||
+      method === 'samsung_pay'
+    ) {
+      setSelectedMethod(
+        method === 'samsung_pay' ? 'card' : (method as AllowedPaymentMethod)
+      );
+      setLastAttemptedScreen('pay_with_wallet');
+      setCurrentScreen('pay_with_wallet');
     }
   };
 
-  // 3. PayFast Submission (Image 4)
+  // 3. Submit Wallet Trial Payment (from "Pay with a wallet" modal)
+  const handleWalletSubmit = async (
+    wallet: 'google_pay' | 'apple_pay' | 'samsung_pay'
+  ) => {
+    setSelectedMethod(wallet === 'samsung_pay' ? 'card' : wallet);
+    setLastAttemptedScreen('pay_with_wallet');
+    setIsProcessing(true);
+    try {
+      const res = await simulateSandboxCheckout(
+        'success',
+        selectedPlan,
+        wallet === 'samsung_pay' ? 'card' : wallet
+      );
+      if (res.success) {
+        setCurrentScreen('success');
+      } else {
+        setCurrentScreen('payment_error');
+      }
+    } catch (e) {
+      setCurrentScreen('payment_error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 4. PayFast Submission (Image 4)
   const handlePayFastSubmit = async () => {
+    setLastAttemptedScreen('pay_with_payfast');
     setIsProcessing(true);
     try {
       const res = await simulateSandboxCheckout('success', selectedPlan, 'card');
@@ -324,7 +324,7 @@ export function PaywallModal({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Try again"
-                onPress={() => setCurrentScreen('pay_by_card')}
+                onPress={() => setCurrentScreen(lastAttemptedScreen || 'pay_by_card')}
                 style={({ pressed }) => [
                   styles.primaryButton,
                   pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
@@ -754,6 +754,94 @@ export function PaywallModal({
                   onPress={() => setCurrentScreen('choose_payment')}
                   style={({ pressed }) => [
                     styles.secondaryButton,
+                    pressed && { opacity: 0.8 },
+                  ]}>
+                  <Text style={styles.secondaryButtonText}>Back</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ========================================================= */}
+        {/* BOTTOM SHEET 4: "Pay with a wallet" (User Screenshot)     */}
+        {/* ========================================================= */}
+        <Modal
+          visible={currentScreen === 'pay_with_wallet'}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setCurrentScreen('choose_payment')}>
+          <View style={styles.sheetBackdrop}>
+            <View style={styles.sheetContainer}>
+              {/* Drag Handle */}
+              <View style={styles.dragHandle} />
+
+              {/* Title */}
+              <Text style={styles.sheetTitle}>Pay with a wallet</Text>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Plan Summary Card */}
+                <View style={styles.planSummaryBox}>
+                  <Text style={styles.summaryPlanTitle}>{planTitle}</Text>
+                  <Text style={styles.summaryPlanPrice}>{planPriceText}</Text>
+                  <Text style={styles.summaryPlanClause}>{planBillingClause}</Text>
+                </View>
+
+                {/* 3 Wallet Dark Buttons matching User Screenshot */}
+                <View style={styles.walletButtonsList}>
+                  {/* Google Pay */}
+                  <Pressable
+                    disabled={isProcessing}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pay with Google Pay"
+                    onPress={() => handleWalletSubmit('google_pay')}
+                    style={({ pressed }) => [
+                      styles.walletDarkButton,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+                    ]}>
+                    <Text style={styles.walletDarkButtonText}>Google Pay</Text>
+                  </Pressable>
+
+                  {/* Apple Pay */}
+                  <Pressable
+                    disabled={isProcessing}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pay with Apple Pay"
+                    onPress={() => handleWalletSubmit('apple_pay')}
+                    style={({ pressed }) => [
+                      styles.walletDarkButton,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+                    ]}>
+                    <Text style={styles.walletDarkButtonText}>Apple Pay</Text>
+                  </Pressable>
+
+                  {/* Samsung Pay */}
+                  <Pressable
+                    disabled={isProcessing}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pay with Samsung Pay"
+                    onPress={() => handleWalletSubmit('samsung_pay')}
+                    style={({ pressed }) => [
+                      styles.walletDarkButton,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+                    ]}>
+                    <Text style={styles.walletDarkButtonText}>Samsung Pay</Text>
+                  </Pressable>
+                </View>
+
+                {/* Footnote matching User Screenshot */}
+                <Text style={styles.walletDisclaimer}>
+                  One tap with the wallet on your phone. Use the official button for each wallet in the build.
+                </Text>
+
+                {/* Secondary Back Button */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to payment choices"
+                  onPress={() => setCurrentScreen('choose_payment')}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    { marginTop: 16 },
                     pressed && { opacity: 0.8 },
                   ]}>
                   <Text style={styles.secondaryButtonText}>Back</Text>
@@ -1282,6 +1370,43 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: BrandColors.muted,
     marginBottom: 24,
+  },
+  // Pay with a wallet (User Screenshot)
+  walletButtonsList: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  walletDarkButton: {
+    height: 54,
+    backgroundColor: '#14181F',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  walletDarkButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
+  },
+  walletDisclaimer: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: BrandColors.muted,
+    marginBottom: 10,
+    fontFamily: Platform.select({
+      web: "'Space Grotesk', system-ui, sans-serif",
+      default: undefined,
+    }),
   },
   // Full-screen Error & Success (Image 3 & 5)
   fullScreenContainer: {
