@@ -2,8 +2,10 @@ import { Image } from 'expo-image';
 import {
   Folder,
   MediaImage,
+  NavArrowRight,
   Plus,
   Search,
+  Sparks,
   Xmark,
 } from 'iconoir-react-native';
 import React, { useMemo, useState } from 'react';
@@ -22,6 +24,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
+import { CleanUpModal } from '@/components/clean-up-modal';
+import { PaywallModal } from '@/components/paywall-modal';
+import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import {
   ScreenshotCategory,
@@ -43,6 +48,10 @@ const CATEGORY_COLORS: Record<ScreenshotCategory, { bg: string; text: string; bo
   Chats: { bg: '#ECFDF5', text: '#047857', border: '#A7F3D0' },
   Tickets: { bg: '#F5F3FF', text: '#6D28D9', border: '#DDD6FE' },
   Maps: { bg: '#F0FDFA', text: '#0F766E', border: '#99F6E4' },
+  Memes: { bg: '#FDF4FF', text: '#A21CAF', border: '#F0ABFC' },
+  Fashion: { bg: '#FFF1F2', text: '#BE123C', border: '#FECDD3' },
+  Finance: { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' },
+  Travel: { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
   Other: { bg: '#F3F4F6', text: '#4B5563', border: '#E5E7EB' },
 };
 
@@ -64,6 +73,7 @@ export function MainHomeView({
   const {
     screenshots,
     isLoading,
+    needsReviewCount,
     pickScreenshotsFromPhone,
     refreshScreenshots,
   } = useScreenshots();
@@ -72,6 +82,9 @@ export function MainHomeView({
   const [activeCollection, setActiveCollection] = useState<string>('All');
   const [searchCategoryFilter, setSearchCategoryFilter] = useState<string>('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
+  const [showCleanUpModal, setShowCleanUpModal] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const allCategories: ScreenshotCategory[] = [
     'Receipts',
@@ -80,6 +93,10 @@ export function MainHomeView({
     'Chats',
     'Tickets',
     'Maps',
+    'Memes',
+    'Fashion',
+    'Finance',
+    'Travel',
   ];
 
   const collections = ['All', 'Receipts', 'Recipes', 'Work', 'Tickets', 'Chats', 'Maps'];
@@ -90,7 +107,6 @@ export function MainHomeView({
     if (!q) return [];
 
     return screenshots.filter((item) => {
-      // Category filter inside search
       if (
         searchCategoryFilter !== 'All' &&
         item.category.toLowerCase() !== searchCategoryFilter.toLowerCase()
@@ -129,10 +145,6 @@ export function MainHomeView({
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchCategoryFilter('All');
-  };
-
-  const handleSuggestionPress = (term: string) => {
-    setSearchQuery(term);
   };
 
   return (
@@ -177,20 +189,31 @@ export function MainHomeView({
             </Pressable>
           </View>
 
-          {/* Search Bar - Searches from all screenshot categories & words */}
-          <View style={styles.searchBarContainer}>
-            <Search color={BrandColors.muted} width={20} height={20} strokeWidth={2} />
+          {/* Floating Pill Search Bar (Modern Floating Capsule Design) */}
+          <View
+            style={[
+              styles.floatingSearchPill,
+              isSearchFocused && styles.floatingSearchPillFocused,
+            ]}>
+            <Search
+              color={isSearchFocused ? BrandColors.primary : BrandColors.muted}
+              width={20}
+              height={20}
+              strokeWidth={2.2}
+            />
             <TextInput
-              style={styles.searchInput}
+              style={styles.floatingSearchInput}
               placeholder="Search words inside screenshots"
               placeholderTextColor={BrandColors.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               returnKeyType="search"
               clearButtonMode="never"
               autoCorrect={false}
             />
-            {isSearching && (
+            {isSearching ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Clear search query"
@@ -198,6 +221,10 @@ export function MainHomeView({
                 style={styles.clearSearchButton}>
                 <Xmark color={BrandColors.muted} width={18} height={18} strokeWidth={2.2} />
               </Pressable>
+            ) : (
+              <View style={styles.searchPillBadge}>
+                <Text style={styles.searchPillBadgeText}>ALL</Text>
+              </View>
             )}
           </View>
 
@@ -249,14 +276,13 @@ export function MainHomeView({
                   <Text style={styles.emptySearchSubtitle}>
                     Try searching by category name like "Receipts", "Recipes", "Work", "Chats", "Tickets", or words inside your screenshots.
                   </Text>
-                  {/* Suggested searches matching Search.png */}
                   <View style={styles.suggestionsContainer}>
                     <Text style={styles.suggestionsLabel}>Try searching:</Text>
                     <View style={styles.suggestionsRow}>
                       {SUGGESTED_SEARCHES.map((term) => (
                         <Pressable
                           key={term}
-                          onPress={() => handleSuggestionPress(term)}
+                          onPress={() => setSearchQuery(term)}
                           style={styles.suggestionPill}>
                           <Text style={styles.suggestionText}>{term}</Text>
                         </Pressable>
@@ -389,29 +415,30 @@ export function MainHomeView({
                 </View>
               </View>
 
-              {/* Needs Review Card matching 6 Home.png */}
+              {/* Needs Review Card matching 6 Home.png (Now opens CleanUpModal!) */}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Needs review section"
-                onPress={() => {
-                  if (onReviewPress) {
-                    onReviewPress();
-                  } else if (onTabChange) {
-                    onTabChange('Library');
-                  }
-                }}
+                onPress={() => setShowCleanUpModal(true)}
                 style={({ pressed }) => [
                   styles.reviewCard,
                   pressed && styles.cardPressed,
                 ]}>
                 <View style={styles.reviewCardLeft}>
-                  <Text style={styles.reviewTitle}>Needs review</Text>
+                  <View style={styles.reviewTitleRow}>
+                    <Text style={styles.reviewTitle}>Needs review</Text>
+                    <View style={styles.reviewPulseDot} />
+                  </View>
                   <Text style={styles.reviewSubtitle}>
-                    {screenshots.length} screenshots ready to organize
+                    {needsReviewCount > 0
+                      ? `${needsReviewCount} screenshots to sort`
+                      : 'All screenshots organised · Tap for Clean-Up'}
                   </Text>
                 </View>
                 <View style={styles.reviewBadge}>
-                  <Text style={styles.reviewBadgeText}>{screenshots.length}</Text>
+                  <Text style={styles.reviewBadgeText}>
+                    {needsReviewCount > 0 ? needsReviewCount : screenshots.length}
+                  </Text>
                 </View>
               </Pressable>
 
@@ -419,7 +446,9 @@ export function MainHomeView({
               <View style={styles.section}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>Collections</Text>
-                  <Text style={styles.sectionMeta}>{collectionScreenshots.length} items</Text>
+                  <Pressable onPress={() => onTabChange && onTabChange('Collections')}>
+                    <Text style={styles.sectionMetaLink}>View all →</Text>
+                  </Pressable>
                 </View>
 
                 <ScrollView
@@ -459,12 +488,16 @@ export function MainHomeView({
                   })}
                 </ScrollView>
 
-                <Text style={styles.planLimitText}>
-                  Free plan: {screenshots.length} of 500 organised on-device
-                </Text>
+                {/* Free plan limit notice: Tapping opens PaywallModal! */}
+                <Pressable onPress={() => setShowPaywallModal(true)}>
+                  <Text style={styles.planLimitText}>
+                    Free plan: {screenshots.length} of 500 organised{' '}
+                    <Text style={styles.planUpgradeLink}>Upgrade</Text>
+                  </Text>
+                </Pressable>
               </View>
 
-              {/* Categorized Screenshots Feed: Always visible photos on Home */}
+              {/* Categorised Screenshots Feed: Always visible photos on Home */}
               <View style={styles.section}>
                 <View style={styles.feedHeaderRow}>
                   <Text style={styles.feedHeading}>
@@ -473,7 +506,8 @@ export function MainHomeView({
                       : `${activeCollection} Screenshots`}
                   </Text>
                   <Text style={styles.feedCountText}>
-                    {collectionScreenshots.length} {collectionScreenshots.length === 1 ? 'item' : 'items'}
+                    {collectionScreenshots.length}{' '}
+                    {collectionScreenshots.length === 1 ? 'item' : 'items'}
                   </Text>
                 </View>
 
@@ -545,70 +579,29 @@ export function MainHomeView({
         </View>
       </ScrollView>
 
-      {/* Screenshot Full Preview Modal */}
+      {/* Screenshot Full Inspector Modal matching Screenshot detail.png */}
       {selectedScreenshot && (
-        <Modal
-          visible={true}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setSelectedScreenshot(null)}>
-          <View style={styles.modalBackdrop}>
-            <SafeAreaView style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <View style={styles.modalHeaderTitleCol}>
-                  <View
-                    style={[
-                      styles.categoryBadgeModal,
-                      {
-                        backgroundColor:
-                          (CATEGORY_COLORS[selectedScreenshot.category] || CATEGORY_COLORS.Other).bg,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.categoryBadgeTextModal,
-                        {
-                          color:
-                            (CATEGORY_COLORS[selectedScreenshot.category] || CATEGORY_COLORS.Other).text,
-                        },
-                      ]}>
-                      {selectedScreenshot.category}
-                    </Text>
-                  </View>
-                  <Text style={styles.modalTitle} numberOfLines={1}>
-                    {selectedScreenshot.filename}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => setSelectedScreenshot(null)}
-                  style={styles.modalCloseButton}>
-                  <Text style={styles.modalCloseText}>✕</Text>
-                </Pressable>
-              </View>
+        <ScreenshotDetailModal
+          screenshot={selectedScreenshot}
+          visible={!!selectedScreenshot}
+          onClose={() => setSelectedScreenshot(null)}
+        />
+      )}
 
-              <View style={styles.modalImageContainer}>
-                <Image
-                  source={{ uri: selectedScreenshot.uri }}
-                  style={styles.modalImage}
-                  contentFit="contain"
-                />
-              </View>
+      {/* Clean-Up Modal matching Clean-Up.png */}
+      {showCleanUpModal && (
+        <CleanUpModal
+          visible={showCleanUpModal}
+          onClose={() => setShowCleanUpModal(false)}
+        />
+      )}
 
-              {selectedScreenshot.ocrText ? (
-                <View style={styles.modalOcrContainer}>
-                  <View style={styles.modalOcrHeader}>
-                    <Text style={styles.modalOcrLabel}>Detected Text (On-Device OCR):</Text>
-                  </View>
-                  <ScrollView style={styles.modalOcrScroll}>
-                    <Text style={styles.modalOcrText}>
-                      {selectedScreenshot.ocrText}
-                    </Text>
-                  </ScrollView>
-                </View>
-              ) : null}
-            </SafeAreaView>
-          </View>
-        </Modal>
+      {/* Paywall Modal matching Paywall.png */}
+      {showPaywallModal && (
+        <PaywallModal
+          visible={showPaywallModal}
+          onClose={() => setShowPaywallModal(false)}
+        />
       )}
 
       {/* Floating Modern Navigation Pill */}
@@ -642,7 +635,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   appTitle: {
     fontSize: 34,
@@ -680,24 +673,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  searchBarContainer: {
+  /* Modern Floating Pill Search Bar */
+  floatingSearchPill: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 28,
+    borderWidth: 1.5,
     borderColor: BrandColors.border,
-    height: 52,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    paddingHorizontal: 18,
+    gap: 12,
+    marginBottom: 22,
+    shadowColor: '#14181F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  searchInput: {
+  floatingSearchPillFocused: {
+    borderColor: BrandColors.primary,
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+  },
+  floatingSearchInput: {
     flex: 1,
     fontSize: 15,
     color: BrandColors.ink,
@@ -709,6 +708,17 @@ const styles = StyleSheet.create({
   },
   clearSearchButton: {
     padding: 6,
+  },
+  searchPillBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  searchPillBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: BrandColors.muted,
   },
   searchResultsContainer: {
     marginBottom: 28,
@@ -877,9 +887,10 @@ const styles = StyleSheet.create({
     color: BrandColors.ink,
     letterSpacing: -0.4,
   },
-  sectionMeta: {
+  sectionMetaLink: {
     fontSize: 13,
-    color: BrandColors.muted,
+    color: BrandColors.primary,
+    fontWeight: '600',
   },
   pickMoreButton: {
     paddingVertical: 4,
@@ -967,11 +978,22 @@ const styles = StyleSheet.create({
   reviewCardLeft: {
     flex: 1,
   },
+  reviewTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+  },
   reviewTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: BrandColors.ink,
-    marginBottom: 3,
+  },
+  reviewPulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E11D48',
   },
   reviewSubtitle: {
     fontSize: 13,
@@ -1026,6 +1048,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     fontSize: 13,
     color: BrandColors.muted,
+  },
+  planUpgradeLink: {
+    color: BrandColors.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   feedHeaderRow: {
     flexDirection: 'row',
@@ -1119,91 +1146,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    justifyContent: 'center',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modalHeaderTitleCol: {
-    flex: 1,
-    marginRight: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryBadgeModal: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  categoryBadgeTextModal: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  modalTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    flex: 1,
-  },
-  modalCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCloseText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  modalImageContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
-  },
-  modalImage: {
-    width: '100%',
-    height: '100%',
-  },
-  modalOcrContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    maxHeight: 120,
-  },
-  modalOcrHeader: {
-    marginBottom: 4,
-  },
-  modalOcrLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: BrandColors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  modalOcrScroll: {
-    maxHeight: 70,
-  },
-  modalOcrText: {
-    fontSize: 13,
-    color: BrandColors.ink,
-    lineHeight: 18,
   },
 });

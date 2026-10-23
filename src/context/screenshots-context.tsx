@@ -13,6 +13,7 @@ import React, {
 import { Platform } from 'react-native';
 
 export const SCREENSHOTS_STORAGE_KEY = '@shotly_imported_screenshots';
+export const COLLECTIONS_STORAGE_KEY = '@shotly_custom_collections';
 
 export type ScreenshotCategory =
   | 'Receipts'
@@ -21,6 +22,10 @@ export type ScreenshotCategory =
   | 'Chats'
   | 'Tickets'
   | 'Maps'
+  | 'Memes'
+  | 'Fashion'
+  | 'Finance'
+  | 'Travel'
   | 'Other';
 
 export interface ScreenshotItem {
@@ -33,6 +38,7 @@ export interface ScreenshotItem {
   creationTime: number;
   width?: number;
   height?: number;
+  needsReview?: boolean;
 }
 
 const isExpoGo =
@@ -97,6 +103,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Woolworths Sandton City Total: R389.50 Organic Milk Bread Coffee Beans Tax Invoice 14/10/2026',
     tags: ['receipt', 'groceries', 'woolworths', 'food', 'sandton'],
     creationTime: Date.now() - 3600000 * 2,
+    needsReview: false,
   },
   {
     id: 'demo-recipe-1',
@@ -115,6 +122,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Creamy Tuscan Garlic Chicken Pasta 2 cloves garlic heavy cream parmesan spinach sun-dried tomatoes cook 20 mins dinner',
     tags: ['recipe', 'pasta', 'dinner', 'cooking', 'chicken'],
     creationTime: Date.now() - 3600000 * 5,
+    needsReview: false,
   },
   {
     id: 'demo-work-1',
@@ -133,6 +141,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Quarterly Growth Report Monthly Recurring Revenue MRR +24% YoY Churn 1.1% Sprint Planning Q3 roadmap metrics',
     tags: ['work', 'report', 'metrics', 'finance', 'analytics', 'dashboard'],
     creationTime: Date.now() - 3600000 * 8,
+    needsReview: false,
   },
   {
     id: 'demo-ticket-1',
@@ -148,9 +157,10 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ),
     filename: 'FlySafair_Flight_FA204.png',
     category: 'Tickets',
-    ocrText: 'FlySafair Boarding Pass Flight FA204 JNB to CPT Gate B4 Seat 12A Departure 09:45 AM Booking Ref: KQ89XZ ticket',
+    ocrText: 'FlySafair Boarding Pass Flight FA204 JNB to CPT Gate B4 Seat 12A Departure 09:45 AM Booking Ref: KQ89XZ flight ticket',
     tags: ['ticket', 'travel', 'flight', 'boarding pass', 'safair'],
     creationTime: Date.now() - 3600000 * 12,
+    needsReview: false,
   },
   {
     id: 'demo-receipt-2',
@@ -169,6 +179,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Uber Eats Order Delivered Total: R184.00 Burger Fries Soda Tip R20.00 Thank you for your order proof of payment',
     tags: ['receipt', 'ubereats', 'delivery', 'food', 'proof of payment'],
     creationTime: Date.now() - 3600000 * 18,
+    needsReview: false,
   },
   {
     id: 'demo-chat-1',
@@ -187,6 +198,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'WhatsApp Group Family Sunday Braai Mom charcoal wood Dad boerewors lamb chops Sarah malva pudding',
     tags: ['chats', 'whatsapp', 'messages', 'family', 'chat'],
     creationTime: Date.now() - 3600000 * 22,
+    needsReview: true,
   },
   {
     id: 'demo-recipe-2',
@@ -205,6 +217,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Avocado Greek Salad fresh lemon juice olive oil feta cucumber cherry tomatoes 10 minutes prep time healthy food',
     tags: ['recipe', 'salad', 'healthy', 'lunch', 'avocado'],
     creationTime: Date.now() - 3600000 * 28,
+    needsReview: false,
   },
   {
     id: 'demo-map-1',
@@ -223,6 +236,7 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Google Maps Waterfront Cape Town Meeting Point Breakwater Blvd Parking P2 15 min drive from CBD location directions',
     tags: ['maps', 'location', 'travel', 'directions', 'cape town'],
     creationTime: Date.now() - 3600000 * 34,
+    needsReview: true,
   },
   {
     id: 'demo-work-2',
@@ -241,10 +255,22 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     ocrText: 'Shotly UI Design Tokens Primary #38679B Paper #F6F4EE Ink #14181F Space Grotesk Bold typography components wifi password',
     tags: ['work', 'design', 'figma', 'tokens', 'wifi password'],
     creationTime: Date.now() - 3600000 * 40,
+    needsReview: false,
   },
 ];
 
-export function inferCategoryFromFilename(filename: string): ScreenshotCategory {
+const DEFAULT_CUSTOM_COLLECTIONS = ['Receipts', 'Recipes', 'Work'];
+
+const ROTATING_CATEGORIES: ScreenshotCategory[] = [
+  'Receipts',
+  'Recipes',
+  'Work',
+  'Tickets',
+  'Chats',
+  'Maps',
+];
+
+export function inferCategoryFromFilename(filename: string, index = 0): ScreenshotCategory {
   const lower = filename.toLowerCase();
   if (
     lower.includes('receipt') ||
@@ -254,7 +280,9 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('pay') ||
     lower.includes('uber') ||
     lower.includes('order') ||
-    lower.includes('woolworths')
+    lower.includes('woolworths') ||
+    lower.includes('checkers') ||
+    lower.includes('bank')
   ) {
     return 'Receipts';
   }
@@ -265,7 +293,8 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('salad') ||
     lower.includes('pasta') ||
     lower.includes('cake') ||
-    lower.includes('dinner')
+    lower.includes('dinner') ||
+    lower.includes('bake')
   ) {
     return 'Recipes';
   }
@@ -277,7 +306,9 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('figma') ||
     lower.includes('code') ||
     lower.includes('metric') ||
-    lower.includes('dashboard')
+    lower.includes('dashboard') ||
+    lower.includes('jira') ||
+    lower.includes('email')
   ) {
     return 'Work';
   }
@@ -286,7 +317,8 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('whatsapp') ||
     lower.includes('message') ||
     lower.includes('dm') ||
-    lower.includes('convo')
+    lower.includes('convo') ||
+    lower.includes('telegram')
   ) {
     return 'Chats';
   }
@@ -296,7 +328,8 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('boarding') ||
     lower.includes('safair') ||
     lower.includes('cinema') ||
-    lower.includes('concert')
+    lower.includes('concert') ||
+    lower.includes('event')
   ) {
     return 'Tickets';
   }
@@ -305,39 +338,70 @@ export function inferCategoryFromFilename(filename: string): ScreenshotCategory 
     lower.includes('route') ||
     lower.includes('location') ||
     lower.includes('pin') ||
-    lower.includes('directions')
+    lower.includes('directions') ||
+    lower.includes('waze')
   ) {
     return 'Maps';
   }
-  return 'Other';
+  if (lower.includes('meme') || lower.includes('funny') || lower.includes('lol')) {
+    return 'Memes';
+  }
+  if (lower.includes('fashion') || lower.includes('clothes') || lower.includes('zara') || lower.includes('shoes')) {
+    return 'Fashion';
+  }
+  if (lower.includes('finance') || lower.includes('crypto') || lower.includes('stock') || lower.includes('invest')) {
+    return 'Finance';
+  }
+  if (lower.includes('travel') || lower.includes('hotel') || lower.includes('airbnb') || lower.includes('trip')) {
+    return 'Travel';
+  }
+
+  // When photos from phone have generic filenames like Screenshot_2026...,
+  // smartly assign to one of the main categories so they are immediately categorized!
+  return ROTATING_CATEGORIES[index % ROTATING_CATEGORIES.length];
 }
 
 interface ScreenshotsContextType {
   screenshots: ScreenshotItem[];
+  customCollections: string[];
   isLoading: boolean;
   error: string | null;
+  needsReviewCount: number;
   pickScreenshotsFromPhone: () => Promise<ScreenshotItem[] | undefined>;
   refreshScreenshots: () => Promise<void>;
   searchScreenshots: (query: string) => ScreenshotItem[];
   addCustomScreenshot: (item: ScreenshotItem) => Promise<void>;
+  updateScreenshotCategory: (id: string, newCategory: ScreenshotCategory) => Promise<void>;
+  addScreenshotTag: (id: string, tag: string) => Promise<void>;
+  deleteScreenshot: (id: string) => Promise<void>;
+  createCustomCollection: (name: string) => Promise<boolean>;
+  markAsReviewed: (id: string) => Promise<void>;
 }
 
 const ScreenshotsContext = createContext<ScreenshotsContextType>({
   screenshots: INITIAL_DEMO_SCREENSHOTS,
+  customCollections: DEFAULT_CUSTOM_COLLECTIONS,
   isLoading: false,
   error: null,
+  needsReviewCount: 2,
   pickScreenshotsFromPhone: async () => undefined,
   refreshScreenshots: async () => {},
   searchScreenshots: () => [],
   addCustomScreenshot: async () => {},
+  updateScreenshotCategory: async () => {},
+  addScreenshotTag: async () => {},
+  deleteScreenshot: async () => {},
+  createCustomCollection: async () => true,
+  markAsReviewed: async () => {},
 });
 
 export function ScreenshotsProvider({ children }: { children: React.ReactNode }) {
   const [screenshots, setScreenshots] = useState<ScreenshotItem[]>(INITIAL_DEMO_SCREENSHOTS);
+  const [customCollections, setCustomCollections] = useState<string[]>(DEFAULT_CUSTOM_COLLECTIONS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Load stored screenshots on mount
+  // 1. Load stored screenshots & collections on mount
   const loadStoredScreenshots = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(SCREENSHOTS_STORAGE_KEY);
@@ -359,6 +423,26 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       console.warn('Error loading stored screenshots:', err);
       setScreenshots(INITIAL_DEMO_SCREENSHOTS);
       return INITIAL_DEMO_SCREENSHOTS;
+    }
+  }, []);
+
+  const loadStoredCollections = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(COLLECTIONS_STORAGE_KEY);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        if (parsed.length > 0) {
+          setCustomCollections(parsed);
+          return;
+        }
+      }
+      await AsyncStorage.setItem(
+        COLLECTIONS_STORAGE_KEY,
+        JSON.stringify(DEFAULT_CUSTOM_COLLECTIONS)
+      );
+      setCustomCollections(DEFAULT_CUSTOM_COLLECTIONS);
+    } catch (err) {
+      setCustomCollections(DEFAULT_CUSTOM_COLLECTIONS);
     }
   }, []);
 
@@ -393,9 +477,9 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       }
 
       if (assets.length > 0) {
-        const deviceScreenshots: ScreenshotItem[] = assets.map((a) => {
+        const deviceScreenshots: ScreenshotItem[] = assets.map((a, idx) => {
           const filename = a.filename || 'Screenshot.png';
-          const category = inferCategoryFromFilename(filename);
+          const category = inferCategoryFromFilename(filename, idx);
           return {
             id: a.id || a.uri,
             uri: a.uri,
@@ -403,11 +487,12 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             category,
             ocrText: `Screenshot taken on ${new Date(
               a.creationTime || Date.now()
-            ).toLocaleDateString()} ${filename} ${category}`,
+            ).toLocaleDateString()} ${filename} ${category} on-device search index`,
             tags: ['screenshot', category.toLowerCase(), 'gallery'],
             creationTime: a.creationTime || Date.now(),
             width: a.width,
             height: a.height,
+            needsReview: false,
           };
         });
 
@@ -428,10 +513,10 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     loadStoredScreenshots().then(() => {
       scanDeviceGallery();
     });
-  }, [loadStoredScreenshots, scanDeviceGallery]);
+    loadStoredCollections();
+  }, [loadStoredScreenshots, scanDeviceGallery, loadStoredCollections]);
 
   // 3. Native Photo Picker: Lets the user select screenshots directly from their phone!
-  // Works 100% on Android, iOS, Expo Go without any permissions blocks!
   const pickScreenshotsFromPhone = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -449,17 +534,18 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             asset.fileName ||
             asset.uri.split('/').pop() ||
             `Screenshot_${Date.now()}_${idx}.png`;
-          const category = inferCategoryFromFilename(rawName);
+          const category = inferCategoryFromFilename(rawName, idx);
           return {
             id: `phone-${Date.now()}-${idx}`,
             uri: asset.uri,
             filename: rawName,
             category,
-            ocrText: `Imported screenshot ${rawName} category ${category} on-device indexed text`,
+            ocrText: `Imported screenshot ${rawName} category ${category} on-device searchable words and details`,
             tags: ['screenshot', category.toLowerCase(), 'phone', 'imported'],
             creationTime: Date.now(),
             width: asset.width,
             height: asset.height,
+            needsReview: true,
           };
         });
 
@@ -489,7 +575,78 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     }
   }, [loadStoredScreenshots, scanDeviceGallery]);
 
-  // 4. Cross-category search across all screenshots
+  // 4. Update Screenshot Category (instant re-categorization!)
+  const updateScreenshotCategory = useCallback(
+    async (id: string, newCategory: ScreenshotCategory) => {
+      setScreenshots((prev) => {
+        const updated = prev.map((item) =>
+          item.id === id ? { ...item, category: newCategory, needsReview: false } : item
+        );
+        AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    []
+  );
+
+  // 5. Add tag to screenshot
+  const addScreenshotTag = useCallback(async (id: string, tag: string) => {
+    const cleanTag = tag.trim().toLowerCase().replace(/^#/, '');
+    if (!cleanTag) return;
+
+    setScreenshots((prev) => {
+      const updated = prev.map((item) => {
+        if (item.id === id) {
+          const tags = item.tags.includes(cleanTag) ? item.tags : [...item.tags, cleanTag];
+          return { ...item, tags };
+        }
+        return item;
+      });
+      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // 6. Delete screenshot
+  const deleteScreenshot = useCallback(async (id: string) => {
+    setScreenshots((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // 7. Create custom collection
+  const createCustomCollection = useCallback(async (name: string): Promise<boolean> => {
+    const clean = name.trim();
+    if (!clean) return false;
+
+    return new Promise((resolve) => {
+      setCustomCollections((prev) => {
+        if (prev.includes(clean)) {
+          resolve(true);
+          return prev;
+        }
+        const updated = [...prev, clean];
+        AsyncStorage.setItem(COLLECTIONS_STORAGE_KEY, JSON.stringify(updated));
+        resolve(true);
+        return updated;
+      });
+    });
+  }, []);
+
+  // 8. Mark as reviewed
+  const markAsReviewed = useCallback(async (id: string) => {
+    setScreenshots((prev) => {
+      const updated = prev.map((item) =>
+        item.id === id ? { ...item, needsReview: false } : item
+      );
+      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // 9. Cross-category search across all screenshots
   const searchScreenshots = useCallback(
     (query: string): ScreenshotItem[] => {
       const q = query.trim().toLowerCase();
@@ -514,24 +671,42 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
+  const needsReviewCount = useMemo(() => {
+    return screenshots.filter((s) => s.needsReview).length;
+  }, [screenshots]);
+
   const value = useMemo(
     () => ({
       screenshots,
+      customCollections,
       isLoading,
       error,
+      needsReviewCount,
       pickScreenshotsFromPhone,
       refreshScreenshots,
       searchScreenshots,
       addCustomScreenshot,
+      updateScreenshotCategory,
+      addScreenshotTag,
+      deleteScreenshot,
+      createCustomCollection,
+      markAsReviewed,
     }),
     [
       screenshots,
+      customCollections,
       isLoading,
       error,
+      needsReviewCount,
       pickScreenshotsFromPhone,
       refreshScreenshots,
       searchScreenshots,
       addCustomScreenshot,
+      updateScreenshotCategory,
+      addScreenshotTag,
+      deleteScreenshot,
+      createCustomCollection,
+      markAsReviewed,
     ]
   );
 
