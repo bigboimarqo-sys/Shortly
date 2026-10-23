@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library/legacy';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
-import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
+import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
 
 interface MainHomeViewProps {
   onTabChange?: (tab: TabName) => void;
@@ -23,53 +25,24 @@ interface MainHomeViewProps {
   onCollectionPress?: (name: string) => void;
 }
 
-interface PhotoItem {
-  id: string;
-  uri: string;
-}
-
 export function MainHomeView({
   onTabChange,
   onSearchPress,
   onReviewPress,
   onCollectionPress,
 }: MainHomeViewProps) {
-  const { isGranted } = usePhotoPermissions();
+  const {
+    screenshots,
+    isLoading,
+    permissionGranted,
+    refreshScreenshots,
+  } = useScreenshots();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCollection, setActiveCollection] = useState('All');
-  const [recentAssets, setRecentAssets] = useState<PhotoItem[]>([]);
-  const [needsReviewCount] = useState(12);
-  const [organizedCount] = useState(42);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
 
   const collections = ['All', 'Receipts', 'Recipes', 'Work'];
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchRecentPhotos = async () => {
-      if (Platform.OS === 'web' || !isGranted) return;
-      try {
-        const result = await MediaLibrary.getAssetsAsync({
-          first: 4,
-          mediaType: MediaLibrary.MediaType.photo,
-        });
-        if (isMounted && result?.assets && result.assets.length > 0) {
-          setRecentAssets(
-            result.assets.map((a: any) => ({
-              id: a.id || a.uri,
-              uri: a.uri,
-            }))
-          );
-        }
-      } catch (err) {
-        // Silently fall back to placeholder cards
-      }
-    };
-
-    fetchRecentPhotos();
-    return () => {
-      isMounted = false;
-    };
-  }, [isGranted]);
 
   const handleCollectionSelect = (col: string) => {
     setActiveCollection(col);
@@ -78,12 +51,24 @@ export function MainHomeView({
     }
   };
 
+  const recentFour = screenshots.slice(0, 4);
+  const reviewCount = screenshots.length > 0 ? screenshots.length : 12;
+  const organizedCount = screenshots.length > 0 ? screenshots.length : 42;
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}>
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refreshScreenshots}
+            tintColor={BrandColors.primary}
+            colors={[BrandColors.primary]}
+          />
+        }>
         <View style={styles.mainContainer}>
           {/* Header */}
           <View style={styles.header}>
@@ -104,27 +89,61 @@ export function MainHomeView({
             />
           </View>
 
+          {/* Permission Prompt Banner (if not granted yet) */}
+          {!permissionGranted && Platform.OS !== 'web' && (
+            <View style={styles.permissionBanner}>
+              <View style={styles.permissionBannerTextCol}>
+                <Text style={styles.permissionBannerTitle}>Photo Access Needed</Text>
+                <Text style={styles.permissionBannerSubtitle}>
+                  Allow access so Shotly can find and read your phone's screenshots.
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Allow access"
+                onPress={() => refreshScreenshots()}
+                style={({ pressed }) => [
+                  styles.permissionBannerButton,
+                  pressed && { opacity: 0.8 },
+                ]}>
+                <Text style={styles.permissionBannerButtonText}>Allow Access</Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Recent Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Recent</Text>
+              {isLoading && <ActivityIndicator size="small" color={BrandColors.primary} />}
+            </View>
+
             <View style={styles.recentRow}>
               {[0, 1, 2, 3].map((index) => {
-                const asset = recentAssets[index];
+                const item = recentFour[index];
                 return (
                   <Pressable
-                    key={index}
+                    key={item?.id ?? index}
                     accessibilityRole="button"
-                    accessibilityLabel={`Recent screenshot ${index + 1}`}
+                    accessibilityLabel={item ? `Screenshot ${item.filename}` : `Recent screenshot slot ${index + 1}`}
+                    onPress={() => {
+                      if (item) {
+                        setSelectedScreenshot(item);
+                      } else if (!permissionGranted) {
+                        refreshScreenshots();
+                      }
+                    }}
                     style={({ pressed }) => [
                       styles.recentThumb,
                       pressed && styles.thumbPressed,
                     ]}>
-                    {asset ? (
+                    {item ? (
                       <Image
-                        source={{ uri: asset.uri }}
+                        source={{ uri: item.uri }}
                         style={styles.thumbImage}
                         contentFit="cover"
                         transition={200}
+                        cachePolicy="memory-disk"
                       />
                     ) : (
                       <View style={styles.thumbPlaceholder} />
@@ -139,14 +158,20 @@ export function MainHomeView({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Needs review section"
-            onPress={onReviewPress}
+            onPress={() => {
+              if (onReviewPress) {
+                onReviewPress();
+              } else if (onTabChange) {
+                onTabChange('Library');
+              }
+            }}
             style={({ pressed }) => [
               styles.reviewCard,
               pressed && styles.cardPressed,
             ]}>
             <Text style={styles.reviewTitle}>Needs review</Text>
             <Text style={styles.reviewSubtitle}>
-              {needsReviewCount} new screenshots to sort
+              {reviewCount} new screenshots to sort
             </Text>
           </Pressable>
 
@@ -187,7 +212,38 @@ export function MainHomeView({
         </View>
       </ScrollView>
 
-      {/* Persistent Bottom Tab Bar */}
+      {/* Screenshot Full Preview Modal */}
+      {selectedScreenshot && (
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSelectedScreenshot(null)}>
+          <View style={styles.modalBackdrop}>
+            <SafeAreaView style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {selectedScreenshot.filename}
+                </Text>
+                <Pressable
+                  onPress={() => setSelectedScreenshot(null)}
+                  style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </Pressable>
+              </View>
+              <View style={styles.modalImageContainer}>
+                <Image
+                  source={{ uri: selectedScreenshot.uri }}
+                  style={styles.modalImage}
+                  contentFit="contain"
+                />
+              </View>
+            </SafeAreaView>
+          </View>
+        </Modal>
+      )}
+
+      {/* Floating Modern Navigation Pill */}
       <BottomTabBar
         activeTab="Home"
         onTabPress={(tab) => onTabChange && onTabChange(tab)}
@@ -236,7 +292,7 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 28,
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -252,8 +308,53 @@ const styles = StyleSheet.create({
     }),
     height: '100%',
   },
+  permissionBanner: {
+    backgroundColor: '#EEF3F8',
+    borderColor: BrandColors.primary,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  permissionBannerTextCol: {
+    flex: 1,
+  },
+  permissionBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: BrandColors.primary,
+    marginBottom: 2,
+  },
+  permissionBannerSubtitle: {
+    fontSize: 13,
+    color: BrandColors.ink,
+    lineHeight: 18,
+  },
+  permissionBannerButton: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionBannerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   section: {
     marginBottom: 24,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
   },
   sectionTitle: {
     fontSize: 20,
@@ -261,7 +362,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: BrandColors.ink,
     letterSpacing: -0.3,
-    marginBottom: 14,
     fontFamily: Platform.select({
       web: "'Space Grotesk', system-ui, sans-serif",
       default: undefined,
@@ -376,5 +476,50 @@ const styles = StyleSheet.create({
       web: "'Space Grotesk', system-ui, sans-serif",
       default: undefined,
     }),
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 24, 31, 0.92)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flex: 1,
+    marginRight: 12,
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalImageContainer: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
   },
 });

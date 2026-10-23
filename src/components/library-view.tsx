@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library/legacy';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,63 +15,44 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
-import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
+import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
 
 interface LibraryViewProps {
   onTabChange?: (tab: TabName) => void;
 }
 
-interface PhotoItem {
-  id: string;
-  uri: string;
-}
-
 export function LibraryView({ onTabChange }: LibraryViewProps) {
-  const { isGranted } = usePhotoPermissions();
+  const { screenshots, isLoading, refreshScreenshots } = useScreenshots();
   const [activeFilter, setActiveFilter] = useState('All');
-  const [assets, setAssets] = useState<PhotoItem[]>([]);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
 
   const filters = ['All', 'Receipts', 'Chats', 'Tickets', 'Maps'];
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchPhotos = async () => {
-      if (Platform.OS === 'web' || !isGranted) return;
-      try {
-        const result = await MediaLibrary.getAssetsAsync({
-          first: 18,
-          mediaType: MediaLibrary.MediaType.photo,
-        });
-        if (isMounted && result?.assets && result.assets.length > 0) {
-          setAssets(
-            result.assets.map((a: any) => ({
-              id: a.id || a.uri,
-              uri: a.uri,
-            }))
-          );
-        }
-      } catch (e) {
-        // Fall back to placeholders
-      }
-    };
-    fetchPhotos();
-    return () => {
-      isMounted = false;
-    };
-  }, [isGranted]);
-
-  const items = Array.from({ length: 18 }, (_, i) => i);
+  // Show fetched screenshots or minimum 18 slots
+  const displayCount = Math.max(screenshots.length, 18);
+  const items = Array.from({ length: displayCount }, (_, i) => i);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}>
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refreshScreenshots}
+            tintColor={BrandColors.primary}
+            colors={[BrandColors.primary]}
+          />
+        }>
         <View style={styles.mainContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Library</Text>
+            <View style={styles.headerRow}>
+              <Text style={styles.title}>Library</Text>
+              {isLoading && <ActivityIndicator size="small" color={BrandColors.primary} />}
+            </View>
           </View>
 
           {/* Filter Pills */}
@@ -100,27 +83,65 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
           {/* 3-column Grid matching Library.png */}
           <View style={styles.grid}>
             {items.map((index) => {
-              const asset = assets[index];
+              const item = screenshots[index];
               return (
-                <View key={index} style={styles.gridItem}>
-                  {asset ? (
+                <Pressable
+                  key={item?.id ?? index}
+                  onPress={() => item && setSelectedScreenshot(item)}
+                  style={({ pressed }) => [
+                    styles.gridItem,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}>
+                  {item ? (
                     <Image
-                      source={{ uri: asset.uri }}
+                      source={{ uri: item.uri }}
                       style={styles.gridImage}
                       contentFit="cover"
                       transition={200}
+                      cachePolicy="memory-disk"
                     />
                   ) : (
                     <View style={styles.gridPlaceholder} />
                   )}
-                </View>
+                </Pressable>
               );
             })}
           </View>
         </View>
       </ScrollView>
 
-      {/* Persistent Bottom Tab Bar */}
+      {/* Screenshot Full Preview Modal */}
+      {selectedScreenshot && (
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSelectedScreenshot(null)}>
+          <View style={styles.modalBackdrop}>
+            <SafeAreaView style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {selectedScreenshot.filename}
+                </Text>
+                <Pressable
+                  onPress={() => setSelectedScreenshot(null)}
+                  style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </Pressable>
+              </View>
+              <View style={styles.modalImageContainer}>
+                <Image
+                  source={{ uri: selectedScreenshot.uri }}
+                  style={styles.modalImage}
+                  contentFit="contain"
+                />
+              </View>
+            </SafeAreaView>
+          </View>
+        </Modal>
+      )}
+
+      {/* Floating Modern Navigation Pill */}
       <BottomTabBar
         activeTab="Library"
         onTabPress={(tab) => onTabChange && onTabChange(tab)}
@@ -149,6 +170,11 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 38,
@@ -213,6 +239,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCE3EB',
   },
   gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 24, 31, 0.92)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flex: 1,
+    marginRight: 12,
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalImageContainer: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
     width: '100%',
     height: '100%',
   },
