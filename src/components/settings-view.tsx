@@ -16,6 +16,7 @@ import { PaywallModal } from '@/components/paywall-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { ScreenshotCategory, useScreenshots } from '@/context/screenshots-context';
+import { useSubscription } from '@/context/subscription-context';
 import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
 
 interface SettingsViewProps {
@@ -45,6 +46,7 @@ export function SettingsView({
   const { user, isAuthenticated, signOut } = useAuth();
   const { status, resetPermissions } = usePhotoPermissions();
   const { screenshots } = useScreenshots();
+  const { isPlus, record, remainingTrialDays } = useSubscription();
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [autoCapture, setAutoCapture] = useState(true);
@@ -83,8 +85,16 @@ export function SettingsView({
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>Subscription</Text>
               <View style={styles.rowRightBadge}>
-                <Text style={styles.rowValue}>Free</Text>
-                <Text style={styles.upgradeInline}>Upgrade</Text>
+                <Text style={styles.rowValue}>
+                  {isPlus
+                    ? record.status === 'trialing'
+                      ? `Plus (Trial - ${remainingTrialDays}d left)`
+                      : 'Plus Active'
+                    : 'Free'}
+                </Text>
+                <Text style={styles.upgradeInline}>
+                  {isPlus ? 'Manage' : 'Upgrade'}
+                </Text>
               </View>
             </Pressable>
 

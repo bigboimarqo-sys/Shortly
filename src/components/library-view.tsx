@@ -19,6 +19,7 @@ import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useSubscription } from '@/context/subscription-context';
 import {
   ScreenshotCategory,
   ScreenshotItem,
@@ -64,6 +65,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
     pickScreenshotsFromPhone,
     importAllDeviceScreenshots,
   } = useScreenshots();
+  const { isPlus } = useSubscription();
 
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
@@ -72,7 +74,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
 
   const handleAutoImport = async () => {
-    if (screenshots.length >= 500) {
+    if (!isPlus && screenshots.length >= 500) {
       setShowImportModal(false);
       setShowPaywall(true);
       return;
@@ -97,7 +99,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   };
 
   const handlePickFromPhotos = async () => {
-    if (screenshots.length >= 500) {
+    if (!isPlus && screenshots.length >= 500) {
       setShowImportModal(false);
       setShowPaywall(true);
       return;
@@ -169,7 +171,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Import photos from phone"
                 onPress={() => {
-                  if (screenshots.length >= 500) {
+                  if (!isPlus && screenshots.length >= 500) {
                     setShowPaywall(true);
                   } else {
                     setShowImportModal(true);
@@ -411,9 +413,13 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
             {/* Storage capacity indicator */}
             <View style={styles.capacityBanner}>
               <View style={styles.capacityHeader}>
-                <Text style={styles.capacityLabel}>Free Tier Storage</Text>
+                <Text style={styles.capacityLabel}>
+                  {isPlus ? 'Shotly Plus Storage' : 'Free Tier Storage'}
+                </Text>
                 <Text style={styles.capacityValue}>
-                  {screenshots.length} / 500 screenshots used
+                  {isPlus
+                    ? `${screenshots.length} screenshots (Unlimited)`
+                    : `${screenshots.length} / 500 screenshots used`}
                 </Text>
               </View>
               <View style={styles.capacityProgressBar}>
@@ -421,10 +427,12 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                   style={[
                     styles.capacityProgressFill,
                     {
-                      width: `${Math.min(
-                        100,
-                        Math.max(5, (screenshots.length / 500) * 100)
-                      )}%`,
+                      width: isPlus
+                        ? '100%'
+                        : `${Math.min(
+                            100,
+                            Math.max(5, (screenshots.length / 500) * 100)
+                          )}%`,
                     },
                   ]}
                 />

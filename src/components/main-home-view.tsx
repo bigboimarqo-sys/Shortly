@@ -28,6 +28,7 @@ import { CleanUpModal } from '@/components/clean-up-modal';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useSubscription } from '@/context/subscription-context';
 import {
   ScreenshotCategory,
   ScreenshotItem,
@@ -77,6 +78,7 @@ export function MainHomeView({
     pickScreenshotsFromPhone,
     refreshScreenshots,
   } = useScreenshots();
+  const { isPlus } = useSubscription();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCollection, setActiveCollection] = useState<string>('All');
@@ -488,11 +490,20 @@ export function MainHomeView({
                   })}
                 </ScrollView>
 
-                {/* Free plan limit notice: Tapping opens PaywallModal! */}
+                {/* Plan limit notice: Tapping opens PaywallModal! */}
                 <Pressable onPress={() => setShowPaywallModal(true)}>
                   <Text style={styles.planLimitText}>
-                    Free plan: {screenshots.length} of 500 organised{' '}
-                    <Text style={styles.planUpgradeLink}>Upgrade</Text>
+                    {isPlus ? (
+                      <>
+                        Shotly Plus Active: Unlimited screenshots{' '}
+                        <Text style={styles.planUpgradeLink}>Manage</Text>
+                      </>
+                    ) : (
+                      <>
+                        Free plan: {screenshots.length} of 500 organised{' '}
+                        <Text style={styles.planUpgradeLink}>Upgrade</Text>
+                      </>
+                    )}
                   </Text>
                 </Pressable>
               </View>

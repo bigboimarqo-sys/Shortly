@@ -14,6 +14,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { AuthProvider } from '@/context/auth-context';
 import { ScreenshotsProvider } from '@/context/screenshots-context';
+import { SubscriptionProvider } from '@/context/subscription-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,12 +35,14 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ScreenshotsProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AnimatedSplashOverlay />
-          <AppTabs />
-        </ThemeProvider>
-      </ScreenshotsProvider>
+      <SubscriptionProvider>
+        <ScreenshotsProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <AnimatedSplashOverlay />
+            <AppTabs />
+          </ThemeProvider>
+        </ScreenshotsProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

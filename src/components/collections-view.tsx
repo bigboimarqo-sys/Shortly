@@ -18,6 +18,7 @@ import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useSubscription } from '@/context/subscription-context';
 import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
 
 interface CollectionsViewProps {
@@ -31,6 +32,7 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
     customCollections,
     createCustomCollection,
   } = useScreenshots();
+  const { isPlus } = useSubscription();
 
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [collectionSubFilter, setCollectionSubFilter] = useState<'All' | 'Newest' | 'Tagged'>('All');
@@ -78,7 +80,7 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
     const clean = newCollectionName.trim();
     if (!clean) return;
 
-    if (customCollections.length >= 3) {
+    if (!isPlus && customCollections.length >= 3) {
       setShowNewCollectionModal(false);
       setShowPaywall(true);
       return;
