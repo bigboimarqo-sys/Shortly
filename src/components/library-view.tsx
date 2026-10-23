@@ -1,7 +1,10 @@
 import { Image } from 'expo-image';
-import { Plus } from 'iconoir-react-native';
+import { Plus, Sparks, Xmark } from 'iconoir-react-native';
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -13,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
+import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import {
@@ -58,10 +62,61 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
     isLoading,
     refreshScreenshots,
     pickScreenshotsFromPhone,
+    importAllDeviceScreenshots,
   } = useScreenshots();
 
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
+
+  const handleAutoImport = async () => {
+    if (screenshots.length >= 500) {
+      setShowImportModal(false);
+      setShowPaywall(true);
+      return;
+    }
+    setIsBulkImporting(true);
+    try {
+      const count = await importAllDeviceScreenshots();
+      setShowImportModal(false);
+      if (count > 0) {
+        Alert.alert(
+          'Import Complete',
+          `Successfully imported and categorised ${count} ${
+            count === 1 ? 'screenshot' : 'screenshots'
+          } on-device.`
+        );
+      }
+    } catch (err: any) {
+      Alert.alert('Import Notice', err?.message || 'Failed to auto-import screenshots.');
+    } finally {
+      setIsBulkImporting(false);
+    }
+  };
+
+  const handlePickFromPhotos = async () => {
+    if (screenshots.length >= 500) {
+      setShowImportModal(false);
+      setShowPaywall(true);
+      return;
+    }
+    setShowImportModal(false);
+    try {
+      const imported = await pickScreenshotsFromPhone(0); // 0 = unlimited / maximum selection allowed
+      if (imported && imported.length > 0) {
+        Alert.alert(
+          'Import Complete',
+          `Imported and categorised ${imported.length} ${
+            imported.length === 1 ? 'screenshot' : 'screenshots'
+          }.`
+        );
+      }
+    } catch (err: any) {
+      Alert.alert('Import Notice', err?.message || 'Could not access photo library.');
+    }
+  };
 
   const filters = ['All', ...CATEGORIES];
 
@@ -114,7 +169,11 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Import photos from phone"
                 onPress={() => {
-                  pickScreenshotsFromPhone();
+                  if (screenshots.length >= 500) {
+                    setShowPaywall(true);
+                  } else {
+                    setShowImportModal(true);
+                  }
                 }}
                 style={({ pressed }) => [
                   styles.importButton,
@@ -324,6 +383,122 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
       <BottomTabBar
         activeTab="Library"
         onTabPress={(tab) => onTabChange && onTabChange(tab)}
+      />
+
+      {/* Import Modal */}
+      <Modal
+        visible={showImportModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowImportModal(false)}>
+        <View style={styles.importModalBackdrop}>
+          <View style={styles.importModalContent}>
+            {/* Header */}
+            <View style={styles.importModalHeader}>
+              <View>
+                <Text style={styles.importModalTitle}>Import Screenshots</Text>
+                <Text style={styles.importModalSubtitle}>
+                  Import maximum photos into your private library
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowImportModal(false)}
+                style={({ pressed }) => [styles.importCloseBtn, pressed && { opacity: 0.7 }]}>
+                <Xmark color={BrandColors.ink} width={20} height={20} strokeWidth={2.2} />
+              </Pressable>
+            </View>
+
+            {/* Storage capacity indicator */}
+            <View style={styles.capacityBanner}>
+              <View style={styles.capacityHeader}>
+                <Text style={styles.capacityLabel}>Free Tier Storage</Text>
+                <Text style={styles.capacityValue}>
+                  {screenshots.length} / 500 screenshots used
+                </Text>
+              </View>
+              <View style={styles.capacityProgressBar}>
+                <View
+                  style={[
+                    styles.capacityProgressFill,
+                    {
+                      width: `${Math.min(
+                        100,
+                        Math.max(5, (screenshots.length / 500) * 100)
+                      )}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Import Options */}
+            <View style={styles.importOptionsList}>
+              {/* Option 1: Auto-Import All Device Screenshots */}
+              <Pressable
+                disabled={isBulkImporting}
+                onPress={handleAutoImport}
+                style={({ pressed }) => [
+                  styles.importOptionCard,
+                  styles.importOptionCardPrimary,
+                  pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+                ]}>
+                <View style={styles.optionBadgePrimary}>
+                  <Sparks color="#FFFFFF" width={14} height={14} strokeWidth={2.4} />
+                  <Text style={styles.optionBadgePrimaryText}>MAXIMUM / BULK</Text>
+                </View>
+                <Text style={styles.importOptionTitlePrimary}>
+                  Auto-Import All Device Screenshots
+                </Text>
+                <Text style={styles.importOptionDescPrimary}>
+                  Automatically scans your device for all screenshots (up to 500) and categorises them on-device.
+                </Text>
+                <View style={styles.importOptionButtonPrimary}>
+                  {isBulkImporting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.importOptionButtonPrimaryText}>
+                      Import All Screenshots (Up to 500)
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+
+              {/* Option 2: Select Photos Manually (Unlimited Multi-Select) */}
+              <Pressable
+                disabled={isBulkImporting}
+                onPress={handlePickFromPhotos}
+                style={({ pressed }) => [
+                  styles.importOptionCard,
+                  pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+                ]}>
+                <Text style={styles.importOptionTitleSecondary}>
+                  Select from Photo Gallery
+                </Text>
+                <Text style={styles.importOptionDescSecondary}>
+                  Choose as many screenshots as you want with unlimited multi-selection enabled.
+                </Text>
+                <View style={styles.importOptionButtonSecondary}>
+                  <Text style={styles.importOptionButtonSecondaryText}>
+                    Open Photo Picker (Unlimited)
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+
+            {/* Privacy notice */}
+            <View style={styles.importFooter}>
+              <Text style={styles.importFooterText}>
+                🔒 100% on-device privacy. Images and text never leave your phone.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
       />
     </SafeAreaView>
   );
@@ -541,5 +716,169 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     textTransform: 'uppercase',
+  },
+  importModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 24, 31, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  importModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    maxHeight: '90%',
+  },
+  importModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+  },
+  importModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: BrandColors.ink,
+  },
+  importModalSubtitle: {
+    fontSize: 13,
+    color: BrandColors.muted,
+    marginTop: 2,
+  },
+  importCloseBtn: {
+    padding: 8,
+    backgroundColor: BrandColors.paper,
+    borderRadius: 16,
+  },
+  capacityBanner: {
+    backgroundColor: BrandColors.paper,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+  },
+  capacityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  capacityLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: BrandColors.ink,
+  },
+  capacityValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: BrandColors.primary,
+  },
+  capacityProgressBar: {
+    height: 6,
+    backgroundColor: '#E0DDD3',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  capacityProgressFill: {
+    height: '100%',
+    backgroundColor: BrandColors.primary,
+    borderRadius: 3,
+  },
+  importOptionsList: {
+    gap: 14,
+    marginBottom: 16,
+  },
+  importOptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: BrandColors.border,
+    borderRadius: 18,
+    padding: 16,
+  },
+  importOptionCardPrimary: {
+    borderColor: BrandColors.primary,
+    backgroundColor: '#F8FAFC',
+  },
+  optionBadgePrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  optionBadgePrimaryText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  importOptionTitlePrimary: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    marginBottom: 4,
+  },
+  importOptionDescPrimary: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: BrandColors.muted,
+    marginBottom: 12,
+  },
+  importOptionButtonPrimary: {
+    height: 44,
+    backgroundColor: BrandColors.primary,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  importOptionButtonPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  importOptionTitleSecondary: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    marginBottom: 4,
+  },
+  importOptionDescSecondary: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: BrandColors.muted,
+    marginBottom: 12,
+  },
+  importOptionButtonSecondary: {
+    height: 44,
+    backgroundColor: BrandColors.paper,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  importOptionButtonSecondaryText: {
+    color: BrandColors.ink,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  importFooter: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0EEE8',
+  },
+  importFooterText: {
+    fontSize: 12,
+    color: BrandColors.muted,
+    textAlign: 'center',
   },
 });

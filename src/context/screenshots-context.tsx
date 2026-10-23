@@ -367,7 +367,8 @@ interface ScreenshotsContextType {
   isLoading: boolean;
   error: string | null;
   needsReviewCount: number;
-  pickScreenshotsFromPhone: () => Promise<ScreenshotItem[] | undefined>;
+  pickScreenshotsFromPhone: (customLimit?: number) => Promise<ScreenshotItem[] | undefined>;
+  importAllDeviceScreenshots: () => Promise<number>;
   refreshScreenshots: () => Promise<void>;
   searchScreenshots: (query: string) => ScreenshotItem[];
   addCustomScreenshot: (item: ScreenshotItem) => Promise<void>;
@@ -385,6 +386,7 @@ const ScreenshotsContext = createContext<ScreenshotsContextType>({
   error: null,
   needsReviewCount: 2,
   pickScreenshotsFromPhone: async () => undefined,
+  importAllDeviceScreenshots: async () => 0,
   refreshScreenshots: async () => {},
   searchScreenshots: () => [],
   addCustomScreenshot: async () => {},
@@ -460,7 +462,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         if (targetAlbum) {
           const res = await MediaLibrary.getAssetsAsync({
             album: targetAlbum,
-            first: 40,
+            first: 500,
             mediaType: MediaLibrary.MediaType.photo,
             sortBy: [[MediaLibrary.SortBy.creationTime, false]],
           });
@@ -469,7 +471,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       } catch (e) {
         // Fallback to all photos
         const res = await MediaLibrary.getAssetsAsync({
-          first: 40,
+          first: 500,
           mediaType: MediaLibrary.MediaType.photo,
           sortBy: [[MediaLibrary.SortBy.creationTime, false]],
         });
@@ -489,7 +491,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
               a.creationTime || Date.now()
             ).toLocaleDateString()} ${filename} ${category} on-device search index`,
             tags: ['screenshot', category.toLowerCase(), 'gallery'],
-            creationTime: a.creationTime || Date.now(),
+            creationTime: a.creationTime || Date.now() - idx * 1000,
             width: a.width,
             height: a.height,
             needsReview: false,
@@ -497,9 +499,9 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         });
 
         setScreenshots((prev) => {
-          const existingIds = new Set(prev.map((p) => p.id));
-          const uniqueNew = deviceScreenshots.filter((d) => !existingIds.has(d.id));
-          const merged = [...uniqueNew, ...prev];
+          const existingUris = new Set(prev.map((p) => p.uri));
+          const uniqueNew = deviceScreenshots.filter((d) => !existingUris.has(d.uri));
+          const merged = [...uniqueNew, ...prev].slice(0, 500);
           AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(merged));
           return merged;
         });
@@ -516,54 +518,139 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     loadStoredCollections();
   }, [loadStoredScreenshots, scanDeviceGallery, loadStoredCollections]);
 
-  // 3. Native Photo Picker: Lets the user select screenshots directly from their phone!
-  const pickScreenshotsFromPhone = useCallback(async () => {
+  // 3. Native Photo Picker: Lets the user select maximum/unlimited screenshots directly from their phone!
+  const pickScreenshotsFromPhone = useCallback(
+    async (customLimit: number = 0) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsMultipleSelection: true,
+          quality: 0.8,
+          selectionLimit: customLimit, // 0 = UNLIMITED_SELECTION (maximum allowed by OS)
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const newlyImported: ScreenshotItem[] = result.assets.map((asset, idx) => {
+            const rawName =
+              asset.fileName ||
+              asset.uri.split('/').pop() ||
+              `Screenshot_${Date.now()}_${idx}.png`;
+            const category = inferCategoryFromFilename(rawName, idx);
+            return {
+              id: `phone-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+              uri: asset.uri,
+              filename: rawName,
+              category,
+              ocrText: `Imported screenshot ${rawName} category ${category} on-device searchable words and details`,
+              tags: ['screenshot', category.toLowerCase(), 'phone', 'imported'],
+              creationTime: Date.now() - idx * 1000,
+              width: asset.width,
+              height: asset.height,
+              needsReview: true,
+            };
+          });
+
+          setScreenshots((prev) => {
+            const existingUris = new Set(prev.map((p) => p.uri));
+            const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
+            // Enforce free tier max 500 screenshots
+            const updated = [...uniqueNew, ...prev].slice(0, 500);
+            AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+            return updated;
+          });
+
+          return newlyImported;
+        }
+      } catch (err: any) {
+        console.warn('Error launching image picker:', err);
+        setError(err?.message || 'Failed to select screenshots from phone.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  // Bulk import all device screenshots (up to 500)
+  const importAllDeviceScreenshots = useCallback(async (): Promise<number> => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        quality: 1,
-        selectionLimit: 20,
-      });
+      if (Platform.OS !== 'web' && !isExpoGo) {
+        try {
+          const perm = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+          if (perm.granted) {
+            let assets: MediaLibrary.Asset[] = [];
+            try {
+              const targetAlbum = await MediaLibrary.getAlbumAsync('Screenshots');
+              if (targetAlbum) {
+                const res = await MediaLibrary.getAssetsAsync({
+                  album: targetAlbum,
+                  first: 500,
+                  mediaType: MediaLibrary.MediaType.photo,
+                  sortBy: [[MediaLibrary.SortBy.creationTime, false]],
+                });
+                assets = res.assets || [];
+              }
+            } catch (e) {
+              const res = await MediaLibrary.getAssetsAsync({
+                first: 500,
+                mediaType: MediaLibrary.MediaType.photo,
+                sortBy: [[MediaLibrary.SortBy.creationTime, false]],
+              });
+              assets = res.assets || [];
+            }
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newlyImported: ScreenshotItem[] = result.assets.map((asset, idx) => {
-          const rawName =
-            asset.fileName ||
-            asset.uri.split('/').pop() ||
-            `Screenshot_${Date.now()}_${idx}.png`;
-          const category = inferCategoryFromFilename(rawName, idx);
-          return {
-            id: `phone-${Date.now()}-${idx}`,
-            uri: asset.uri,
-            filename: rawName,
-            category,
-            ocrText: `Imported screenshot ${rawName} category ${category} on-device searchable words and details`,
-            tags: ['screenshot', category.toLowerCase(), 'phone', 'imported'],
-            creationTime: Date.now(),
-            width: asset.width,
-            height: asset.height,
-            needsReview: true,
-          };
-        });
+            if (assets.length > 0) {
+              const newlyImported: ScreenshotItem[] = assets.map((a, idx) => {
+                const filename = a.filename || `Screenshot_${Date.now()}_${idx}.png`;
+                const category = inferCategoryFromFilename(filename, idx);
+                return {
+                  id: a.id || `sc-${Date.now()}-${idx}`,
+                  uri: a.uri,
+                  filename,
+                  category,
+                  ocrText: `Screenshot taken on ${new Date(
+                    a.creationTime || Date.now()
+                  ).toLocaleDateString()} ${filename} ${category} on-device search index`,
+                  tags: ['screenshot', category.toLowerCase(), 'gallery'],
+                  creationTime: a.creationTime || Date.now() - idx * 1000,
+                  width: a.width,
+                  height: a.height,
+                  needsReview: false,
+                };
+              });
 
-        setScreenshots((prev) => {
-          const updated = [...newlyImported, ...prev];
-          AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
-          return updated;
-        });
+              setScreenshots((prev) => {
+                const existingUris = new Set(prev.map((p) => p.uri));
+                const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
+                const updated = [...uniqueNew, ...prev].slice(0, 500);
+                AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+                return updated;
+              });
 
-        return newlyImported;
+              return newlyImported.length;
+            }
+          }
+        } catch (e) {
+          // ignore native error
+        }
       }
+
+      // If MediaLibrary is not available (e.g. Expo Go on Android) or has 0 assets,
+      // launch image picker with UNLIMITED selection (0)
+      const res = await pickScreenshotsFromPhone(0);
+      return res?.length ?? 0;
     } catch (err: any) {
-      console.warn('Error launching image picker:', err);
-      setError(err?.message || 'Failed to select screenshots from phone.');
+      console.warn('Error during bulk import:', err);
+      const res = await pickScreenshotsFromPhone(0);
+      return res?.length ?? 0;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [pickScreenshotsFromPhone]);
 
   const refreshScreenshots = useCallback(async () => {
     setIsLoading(true);
@@ -683,6 +770,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       error,
       needsReviewCount,
       pickScreenshotsFromPhone,
+      importAllDeviceScreenshots,
       refreshScreenshots,
       searchScreenshots,
       addCustomScreenshot,
@@ -699,6 +787,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       error,
       needsReviewCount,
       pickScreenshotsFromPhone,
+      importAllDeviceScreenshots,
       refreshScreenshots,
       searchScreenshots,
       addCustomScreenshot,
