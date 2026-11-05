@@ -47,6 +47,12 @@ export default function RootIndexScreen() {
       // If user logs out, redirect to signin
       if (!isAuthenticated && (currentView === 'main' || currentView === 'permissions')) {
         setCurrentView('signin');
+      } else if (isAuthenticated && (currentView === 'signin' || currentView === 'signup')) {
+        if (!isGranted) {
+          setCurrentView('permissions');
+        } else {
+          setCurrentView('main');
+        }
       }
     }
   }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized, currentView]);

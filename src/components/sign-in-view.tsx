@@ -30,10 +30,11 @@ export function SignInView({
   onSuccess,
   onBack,
 }: SignInViewProps) {
-  const { signIn, isLoading } = useAuth();
+  const { signIn, signInWithOAuth, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
 
   const handleSignIn = async () => {
     setErrorMessage(null);
@@ -57,6 +58,25 @@ export function SignInView({
 
     if (onSuccess) {
       onSuccess();
+    }
+  };
+
+  const handleSocialAuth = async (provider: 'google' | 'apple') => {
+    setErrorMessage(null);
+    setSocialLoading(provider);
+    try {
+      const { error, user } = await signInWithOAuth(provider);
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+      if (user && onSuccess) {
+        onSuccess();
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || `Failed to sign in with ${provider}`);
+    } finally {
+      setSocialLoading(null);
     }
   };
 
@@ -149,17 +169,17 @@ export function SignInView({
             {/* Continue with Google */}
             <SocialAuthButton
               provider="google"
-              onPress={() => {
-                if (onSuccess) onSuccess();
-              }}
+              isLoading={socialLoading === 'google'}
+              disabled={isLoading || socialLoading !== null}
+              onPress={() => handleSocialAuth('google')}
             />
 
             {/* Continue with Apple */}
             <SocialAuthButton
               provider="apple"
-              onPress={() => {
-                if (onSuccess) onSuccess();
-              }}
+              isLoading={socialLoading === 'apple'}
+              disabled={isLoading || socialLoading !== null}
+              onPress={() => handleSocialAuth('apple')}
             />
           </View>
 

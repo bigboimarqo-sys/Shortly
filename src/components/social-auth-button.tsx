@@ -1,16 +1,24 @@
 import { Image } from 'expo-image';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandColors } from '@/constants/theme';
 
 interface SocialAuthButtonProps {
   provider: 'google' | 'apple';
   onPress?: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
   style?: any;
 }
 
-export function SocialAuthButton({ provider, onPress, style }: SocialAuthButtonProps) {
+export function SocialAuthButton({
+  provider,
+  onPress,
+  isLoading = false,
+  disabled = false,
+  style,
+}: SocialAuthButtonProps) {
   const isGoogle = provider === 'google';
   const label = isGoogle ? 'Continue with Google' : 'Continue with Apple';
   const iconSource = isGoogle
@@ -20,21 +28,29 @@ export function SocialAuthButton({ provider, onPress, style }: SocialAuthButtonP
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled || isLoading}
       style={({ pressed }) => [
         styles.button,
         pressed && styles.pressed,
+        (disabled || isLoading) && styles.disabled,
         style,
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}>
       <View style={styles.iconContainer}>
-        <Image
-          source={iconSource}
-          style={styles.icon}
-          contentFit="contain"
-        />
+        {isLoading ? (
+          <ActivityIndicator size="small" color={BrandColors.ink} />
+        ) : (
+          <Image
+            source={iconSource}
+            style={styles.icon}
+            contentFit="contain"
+          />
+        )}
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>
+        {isLoading ? 'Connecting...' : label}
+      </Text>
     </Pressable>
   );
 }
@@ -53,6 +69,9 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
     transform: [{ scale: 0.99 }],
+  },
+  disabled: {
+    opacity: 0.65,
   },
   iconContainer: {
     marginRight: 12,

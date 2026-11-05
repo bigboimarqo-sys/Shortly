@@ -28,12 +28,13 @@ export function SignUpView({
   onSuccess,
   onBack,
 }: SignUpViewProps) {
-  const { signUp, isLoading } = useAuth();
+  const { signUp, signInWithOAuth, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<string | null>(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -66,6 +67,27 @@ export function SignUpView({
 
     if (onSuccess) {
       onSuccess();
+    }
+  };
+
+  const handleSocialAuth = async (provider: 'google' | 'apple') => {
+    setErrorMessage(null);
+    setSuccessInfo(null);
+    setSocialLoading(provider);
+    try {
+      setAgreeTerms(true);
+      const { error, user } = await signInWithOAuth(provider);
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+      if (user && onSuccess) {
+        onSuccess();
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || `Failed to sign up with ${provider}`);
+    } finally {
+      setSocialLoading(null);
     }
   };
 
@@ -173,17 +195,17 @@ export function SignUpView({
             {/* Continue with Google */}
             <SocialAuthButton
               provider="google"
-              onPress={() => {
-                if (onSuccess) onSuccess();
-              }}
+              isLoading={socialLoading === 'google'}
+              disabled={isLoading || socialLoading !== null}
+              onPress={() => handleSocialAuth('google')}
             />
 
             {/* Continue with Apple */}
             <SocialAuthButton
               provider="apple"
-              onPress={() => {
-                if (onSuccess) onSuccess();
-              }}
+              isLoading={socialLoading === 'apple'}
+              disabled={isLoading || socialLoading !== null}
+              onPress={() => handleSocialAuth('apple')}
             />
           </View>
 
