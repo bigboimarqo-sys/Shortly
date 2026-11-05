@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { Platform } from 'react-native';
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
@@ -45,6 +46,27 @@ class CrashReportingManager {
       SENTRY_DSN.startsWith('https://');
 
     if (isLiveDsn) {
+      try {
+        Sentry.init({
+          dsn: SENTRY_DSN,
+          enabled: isLiveDsn,
+          debug: __DEV__,
+          beforeSend(event) {
+            // Strictly scrub any screenshot data or OCR text
+            if (event.breadcrumbs) {
+              event.breadcrumbs = event.breadcrumbs.map((b) => ({
+                ...b,
+                message: b.message
+                  ? b.message.replace(/(\.png|\.jpg|\.jpeg|file:\/\/|content:\/\/)[^\s]*/gi, '[redacted_path]')
+                  : b.message,
+              }));
+            }
+            return event;
+          },
+        });
+      } catch (err) {
+        if (__DEV__) console.warn('[CrashReporting] Sentry.init error:', err);
+      }
       if (__DEV__) {
         console.log('[CrashReporting] Sentry DSN configured.');
       }
@@ -85,45 +107,17 @@ class CrashReportingManager {
       return;
     }
 
-    // Dispatch to Sentry Ingest Store API via standard Sentry envelope / store format
     try {
-      const dsnUrl = new URL(SENTRY_DSN);
-      const projectId = dsnUrl.pathname.replace(/^\//, '');
-      const publicKey = dsnUrl.username;
-      const sentryHost = dsnUrl.host;
-
-      const envelopeEndpoint = `https://${sentryHost}/api/${projectId}/store/?sentry_version=7&sentry_key=${publicKey}&sentry_client=shotly-react-native%2F1.0.0`;
-
-      fetch(envelopeEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_id: Math.random().toString(36).substring(2, 18),
-          timestamp: new Date().toISOString(),
-          platform: 'javascript',
-          level: 'error',
-          logger: 'shotly',
-          release: 'shotly@1.0.0',
-          exception: {
-            values: [
-              {
-                type: error?.name || 'Error',
-                value: errorMessage,
-                stacktrace: error?.stack ? { frames: [{ filename: 'app.js', lineno: 1 }] } : undefined,
-              },
-            ],
-          },
-          tags: {
-            platform: Platform.OS,
-            component: cleanCtx.component,
-          },
-          extra: cleanCtx.extra,
-        }),
-      }).catch((e) => {
-        if (__DEV__) console.warn('[CrashReporting] Sentry network error:', e);
+      Sentry.captureException(error, {
+        tags: {
+          component: cleanCtx.component,
+          action: cleanCtx.action,
+          platform: Platform.OS,
+        },
+        extra: cleanCtx.extra,
       });
     } catch (e) {
-      // Never crash the host app if reporting fails
+      if (__DEV__) console.warn('[CrashReporting] Sentry capture error:', e);
     }
   }
 
