@@ -51,6 +51,8 @@ class CrashReportingManager {
           dsn: SENTRY_DSN,
           enabled: isLiveDsn,
           debug: __DEV__,
+          sendDefaultPii: false,
+          enableLogs: true,
           beforeSend(event) {
             // Strictly scrub any screenshot data or OCR text
             if (event.breadcrumbs) {

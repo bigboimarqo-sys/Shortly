@@ -90,9 +90,9 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
   - Env variables set in `.env`: `EXPO_PUBLIC_POSTHOG_API_KEY` and `EXPO_PUBLIC_POSTHOG_HOST`.
   - Initialized on app startup in `_layout.tsx`, tracking paywall impressions and conversions.
 - [x] **Crash Reporting (Sentry)**:
-  - Configured in `src/services/crash-reporting-service.ts` with error sanitizer and global unhandled error hooks.
-  - Env variable set in `.env`: `EXPO_PUBLIC_SENTRY_DSN`.
-  - Initialized on app startup in `_layout.tsx`.
+  - Configured in `src/services/crash-reporting-service.ts` with error sanitizer, structured logging, and global unhandled error hooks.
+  - Live DSN configured in `.env` (`avenueco / react-native` project `4512380860301392`).
+  - App root wrapped in `src/app/_layout.tsx` (`Sentry.wrap(RootLayout)`).
 
 ---
 

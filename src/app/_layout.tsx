@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import * as Sentry from '@sentry/react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { AuthProvider } from '@/context/auth-context';
@@ -31,7 +32,7 @@ function RootNavigation() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -63,4 +64,6 @@ export default function RootLayout() {
     </ThemeProviderCustom>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
