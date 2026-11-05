@@ -60,6 +60,8 @@ export function PaywallModal({
     isPlus,
     record,
     remainingTrialDays,
+    isRevenueCatReady,
+    purchasePlan,
     activateTrial,
     simulateSandboxCheckout,
     restorePurchases,
@@ -189,6 +191,29 @@ export function PaywallModal({
     }
   };
 
+  // Primary CTA action: If RevenueCat is configured, trigger native store purchase directly
+  const handlePrimaryStartTrial = async () => {
+    if (isRevenueCatReady) {
+      setIsProcessing(true);
+      try {
+        const res = await purchasePlan(selectedPlan);
+        if (res.success) {
+          setCurrentScreen('success');
+        } else if (res.scenario === 'cancelled') {
+          // User dismissed store modal, keep on main view
+        } else {
+          setCurrentScreen('choose_payment');
+        }
+      } catch (e) {
+        setCurrentScreen('choose_payment');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    setCurrentScreen('choose_payment');
+  };
+
   // 3. Submit Wallet Trial Payment (from "Pay with a wallet" modal)
   const handleWalletSubmit = async (
     wallet: 'google_pay' | 'apple_pay' | 'samsung_pay'
@@ -197,6 +222,18 @@ export function PaywallModal({
     setLastAttemptedScreen('pay_with_wallet');
     setIsProcessing(true);
     try {
+      if (isRevenueCatReady && (wallet === 'google_pay' || wallet === 'apple_pay')) {
+        const res = await purchasePlan(selectedPlan);
+        if (res.success) {
+          setCurrentScreen('success');
+        } else if (res.scenario === 'cancelled') {
+          // User dismissed native store prompt
+        } else {
+          setCurrentScreen('payment_error');
+        }
+        return;
+      }
+
       const res = await simulateSandboxCheckout(
         'success',
         selectedPlan,
@@ -595,18 +632,24 @@ export function PaywallModal({
                   </Pressable>
                 </View>
 
-                {/* Start 7-day free trial button -> Opens "Choose how to pay" (Image 2) */}
+                {/* Start 7-day free trial button */}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Start 7-day free trial"
-                  onPress={() => setCurrentScreen('choose_payment')}
+                  disabled={isProcessing}
+                  onPress={handlePrimaryStartTrial}
                   style={({ pressed }) => [
                     styles.primaryButton,
+                    isProcessing && { opacity: 0.7 },
                     pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                   ]}>
-                  <Text style={styles.primaryButtonText}>
-                    Start 7-day free trial · {currentPlanDetail.name}
-                  </Text>
+                  {isProcessing ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      Start 7-day free trial · {currentPlanDetail.name}
+                    </Text>
+                  )}
                 </Pressable>
 
                 {/* Hard rule: Always show Restore purchases, Terms and Privacy on Paywall */}

@@ -26,13 +26,15 @@ This checklist tracks all the credentials, backend proxies, API keys, and store 
 ## 2. In-App Purchases & Paywall (Store Billing)
 
 ### A. RevenueCat Setup
-- [ ] Create a project on [RevenueCat Dashboard](https://app.revenuecat.com/).
-- [ ] Add iOS App (Apple App Store) and Android App (Google Play).
-- [ ] Install SDK: `npx expo install react-native-purchases`.
-- [ ] Set environment variables in `.env`:
+- [ ] Create a project on [RevenueCat Dashboard](https://app.revenuecat.com/) (Name: "Shotly").
+- [ ] Add iOS App (Apple App Store) with Bundle ID: `com.shotly.app` (configured in `app.json`).
+- [ ] Add Android App (Google Play) with Package Name: `com.shotly.app` (configured in `app.json`).
+- [x] Install SDK: `npx expo install react-native-purchases` *(Installed v11.0.1)*.
+- [x] Configure RevenueCat Service: `src/services/revenuecat-service.ts` wired to `SubscriptionContext` & `PaywallModal`.
+- [ ] Set your actual production API keys in `.env` and EAS Secrets:
   ```env
-  EXPO_PUBLIC_REVENUECAT_APPLE_KEY=appl_...
-  EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY=goog_...
+  EXPO_PUBLIC_REVENUECAT_APPLE_KEY=appl_your_apple_api_key_here
+  EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY=goog_your_google_api_key_here
   ```
 
 ### B. Product & Entitlement IDs (Exact ZAR Pricing)
@@ -42,7 +44,8 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 - [ ] **`pro_monthly`**: `R79.00` / month (7-day free trial)
 - [ ] **`pro_annual`**: `R699.00` / year (7-day free trial)
 - [ ] **`team_monthly`**: `R149.00` / month (5 seats, 7-day free trial)
-- [ ] Attach all products to the **`plus`** entitlement in RevenueCat.
+- [ ] Attach all products to the **`plus`** entitlement in RevenueCat (under *Entitlements* -> `plus`).
+- [ ] Configure Offering: Create an offering named `default` and attach packages for each product.
 
 ### C. Store Compliance Checks
 - [ ] Paywall clearly displays:

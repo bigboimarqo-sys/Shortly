@@ -15,6 +15,7 @@ import {
   SubscriptionPlan,
   SubscriptionRecord,
 } from '@/services/entitlement-service';
+import { RevenueCatService } from '@/services/revenuecat-service';
 
 interface SubscriptionContextType {
   isPlus: boolean;
@@ -24,6 +25,8 @@ interface SubscriptionContextType {
   isFreeModeExpired: boolean;
   freeScreenshotLimit: number;
   isLoading: boolean;
+  isRevenueCatReady: boolean;
+  purchasePlan: (plan: SubscriptionPlan) => Promise<PaymentResult>;
   activateTrial: (
     plan: SubscriptionPlan,
     method?: AllowedPaymentMethod
@@ -53,6 +56,8 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
   isFreeModeExpired: false,
   freeScreenshotLimit: 100,
   isLoading: true,
+  isRevenueCatReady: false,
+  purchasePlan: async () => ({ success: false, scenario: 'failed' }),
   activateTrial: async () => DEFAULT_FREE_RECORD,
   simulateSandboxCheckout: async () => ({
     success: false,
@@ -76,6 +81,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [remainingFreeDays, setRemainingFreeDays] = useState(7);
   const [isFreeModeExpired, setIsFreeModeExpired] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRevenueCatReady, setIsRevenueCatReady] = useState(false);
 
   const syncState = useCallback((rec: SubscriptionRecord) => {
     setRecord(rec);
@@ -106,11 +112,26 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [syncState]);
 
   useEffect(() => {
+    let isMounted = true;
     refreshSubscription();
-    const unsubscribe = EntitlementService.subscribe((rec) => {
-      syncState(rec);
+
+    // Initialize RevenueCat SDK
+    RevenueCatService.initialize().then((ready) => {
+      if (isMounted) {
+        setIsRevenueCatReady(ready);
+      }
     });
-    return unsubscribe;
+
+    const unsubscribe = EntitlementService.subscribe((rec) => {
+      if (isMounted) {
+        syncState(rec);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [refreshSubscription, syncState]);
 
   const activateTrial = useCallback(
@@ -144,7 +165,29 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     [syncState]
   );
 
+  const purchasePlan = useCallback(
+    async (plan: SubscriptionPlan): Promise<PaymentResult> => {
+      if (RevenueCatService.isReady()) {
+        const rcResult = await RevenueCatService.purchasePlan(plan);
+        if (rcResult.record) {
+          syncState(rcResult.record);
+        }
+        return rcResult;
+      }
+      // Fallback to sandbox checkout simulator
+      return simulateSandboxCheckout('success', plan, 'card');
+    },
+    [syncState, simulateSandboxCheckout]
+  );
+
   const restorePurchases = useCallback(async () => {
+    if (RevenueCatService.isReady()) {
+      const rcRes = await RevenueCatService.restorePurchases();
+      if (rcRes.restored) {
+        syncState(rcRes.record);
+        return rcRes;
+      }
+    }
     const res = await EntitlementService.restorePurchases();
     if (res.restored) {
       syncState(res.record);
@@ -174,6 +217,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         isFreeModeExpired,
         freeScreenshotLimit: 100,
         isLoading,
+        isRevenueCatReady,
+        purchasePlan,
         activateTrial,
         simulateSandboxCheckout,
         restorePurchases,

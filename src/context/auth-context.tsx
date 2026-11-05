@@ -6,6 +6,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+import { RevenueCatService } from '@/services/revenuecat-service';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -153,6 +154,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      if (newSession?.user?.id) {
+        RevenueCatService.logIn(newSession.user.id);
+      }
       await syncStorage(newSession);
       setIsLoading(false);
     });
@@ -356,6 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       await supabase.auth.signOut();
+      await RevenueCatService.logOut();
       setUser(null);
       setSession(null);
       await syncStorage(null);
