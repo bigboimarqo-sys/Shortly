@@ -26,7 +26,7 @@ This checklist tracks all the credentials, backend proxies, API keys, and store 
 ## 2. In-App Purchases & Paywall (Store Billing)
 
 ### A. RevenueCat Setup
-- [ ] Create a project on [RevenueCat Dashboard](https://app.revenuecat.com/) (Name: "Shotly").
+- [x] Create a project on [RevenueCat Dashboard](https://app.revenuecat.com/) (Project created).
 - [ ] Add iOS App (Apple App Store) with Bundle ID: `com.shotly.app` (configured in `app.json`).
 - [ ] Add Android App (Google Play) with Package Name: `com.shotly.app` (configured in `app.json`).
 - [x] Install SDK: `npx expo install react-native-purchases` *(Installed v11.0.1)*.
@@ -48,12 +48,12 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 - [ ] Configure Offering: Create an offering named `default` and attach packages for each product.
 
 ### C. Store Compliance Checks
-- [ ] Paywall clearly displays:
+- [x] Paywall clearly displays:
   - 7-day free trial terms.
   - Price in South African Rand (ZAR).
   - Prominent **Restore purchases** button.
   - Links to **Terms of Service** and **Privacy Policy**.
-- [ ] Sandbox test all four states: Success, Bank Declined, User Cancelled, Network Failed.
+- [x] Sandbox test all four states: Success, Bank Declined, User Cancelled, Network Failed.
 
 ---
 
@@ -64,7 +64,7 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 - [ ] **Authentication Settings**:
   - Enable Email / Password and Magic Link in Supabase Auth Settings.
   - Add App Redirect URLs for deep linking: `shortly://auth/callback`.
-- [ ] **Mandatory Registration / Authentication**:
+- [x] **Mandatory Registration / Authentication**:
   - Verify that guest mode bypass is completely disabled: users cannot skip auth.
   - Ensure all users must register or sign in to activate their 7-day free trial (up to 100 screenshots during trial).
 
@@ -73,11 +73,8 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 ## 4. Native Permissions & On-Device OCR
 
 ### A. App Permissions (`app.json`)
-- [ ] iOS: Ensure `NSPhotoLibraryUsageDescription` is user-friendly:
-  ```json
-  "NSPhotoLibraryUsageDescription": "Shotly needs photo access to detect and organise your screenshots on-device."
-  ```
-- [ ] Android: Ensure `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` permissions are configured.
+- [x] iOS: Configured `NSPhotoLibraryUsageDescription` in `app.json`.
+- [x] Android: Configured `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` in `app.json`.
 
 ### B. Machine Learning OCR Bundling
 - [ ] Standalone build includes Google ML Kit (Android) and Apple Vision (iOS) native binary assets.
