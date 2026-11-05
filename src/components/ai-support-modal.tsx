@@ -75,7 +75,7 @@ export function AISupportModal({
     }
   }, [messages, visible, isTyping]);
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
     if (!text || isTyping) return;
 
@@ -86,16 +86,20 @@ export function AISupportModal({
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const currentHistory = [...messages, userMsg];
+    setMessages(currentHistory);
     setInputText('');
     setIsTyping(true);
 
-    // Simulate natural AI thought and stream delay
-    setTimeout(() => {
-      const aiResponse = AIService.generateSupportResponse(text);
+    try {
+      const aiResponse = await AIService.generateSupportResponse(text, messages);
       setMessages(prev => [...prev, aiResponse]);
+    } catch {
+      const fallback = AIService.generateOfflineSupportResponse(text);
+      setMessages(prev => [...prev, fallback]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   const handleActionLink = (action: SupportChatMessage['actionLink']) => {

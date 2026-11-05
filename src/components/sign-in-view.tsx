@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -30,11 +31,51 @@ export function SignInView({
   onSuccess,
   onBack,
 }: SignInViewProps) {
-  const { signIn, signInWithOAuth, isLoading } = useAuth();
+  const { signIn, signInWithOAuth, resetPassword, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
+
+  // Forgot password modal state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  const handleForgotPasswordClick = () => {
+    if (onForgotPasswordPress) {
+      onForgotPasswordPress();
+    } else {
+      setResetEmail(email.trim());
+      setResetSuccess(false);
+      setResetError(null);
+      setShowResetModal(true);
+    }
+  };
+
+  const handleSendResetEmail = async () => {
+    const cleanEmail = resetEmail.trim();
+    if (!cleanEmail) {
+      setResetError('Please enter your email address.');
+      return;
+    }
+    setResetLoading(true);
+    setResetError(null);
+    try {
+      const { error } = await resetPassword(cleanEmail);
+      if (error) {
+        setResetError(error.message || 'Failed to send reset link. Please check your email.');
+      } else {
+        setResetSuccess(true);
+      }
+    } catch (err: any) {
+      setResetError(err?.message || 'Something went wrong.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     setErrorMessage(null);
@@ -160,7 +201,7 @@ export function SignInView({
 
             {/* Forgot password link */}
             <Pressable
-              onPress={onForgotPasswordPress}
+              onPress={handleForgotPasswordClick}
               style={({ pressed }) => [styles.forgotPasswordButton, pressed && { opacity: 0.7 }]}
               accessibilityRole="button">
               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
@@ -197,6 +238,90 @@ export function SignInView({
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showResetModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowResetModal(false)}>
+        <View style={styles.resetModalBackdrop}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.resetModalKeyboard}>
+            <View style={styles.resetModalContent}>
+              <View style={styles.resetModalHeader}>
+                <Text style={styles.resetModalTitle}>Reset Password</Text>
+                <Pressable
+                  onPress={() => setShowResetModal(false)}
+                  style={({ pressed }) => [styles.resetModalClose, pressed && { opacity: 0.7 }]}>
+                  <Text style={styles.resetModalCloseText}>✕</Text>
+                </Pressable>
+              </View>
+
+              {resetSuccess ? (
+                <View style={styles.resetSuccessBox}>
+                  <Text style={styles.resetSuccessEmoji}>✉️</Text>
+                  <Text style={styles.resetSuccessTitle}>Check your inbox</Text>
+                  <Text style={styles.resetSuccessDesc}>
+                    We’ve sent password reset instructions to{' '}
+                    <Text style={{ fontWeight: '700', color: BrandColors.ink }}>
+                      {resetEmail}
+                    </Text>
+                    .
+                  </Text>
+                  <Pressable
+                    onPress={() => setShowResetModal(false)}
+                    style={styles.resetDoneBtn}>
+                    <Text style={styles.resetDoneBtnText}>Done</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.resetModalDesc}>
+                    Enter your email address and we'll send you a secure link to reset your password.
+                  </Text>
+
+                  {resetError && (
+                    <View style={styles.resetErrorBox}>
+                      <Text style={styles.resetErrorText}>{resetError}</Text>
+                    </View>
+                  )}
+
+                  <TextInput
+                    style={styles.resetInput}
+                    placeholder="name@example.com"
+                    placeholderTextColor="#8E95A0"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={resetEmail}
+                    onChangeText={(val) => {
+                      setResetEmail(val);
+                      if (resetError) setResetError(null);
+                    }}
+                  />
+
+                  <Pressable
+                    onPress={handleSendResetEmail}
+                    disabled={resetLoading}
+                    style={({ pressed }) => [
+                      styles.resetSendBtn,
+                      pressed && styles.buttonPressed,
+                      resetLoading && styles.buttonDisabled,
+                    ]}>
+                    {resetLoading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={styles.resetSendBtnText}>Send Reset Link</Text>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -318,6 +443,124 @@ const styles = StyleSheet.create({
   },
   linkHighlight: {
     color: BrandColors.primary,
+    fontWeight: '700',
+  },
+  resetModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 24, 31, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  resetModalKeyboard: {
+    width: '100%',
+  },
+  resetModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+  },
+  resetModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  resetModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    letterSpacing: -0.3,
+  },
+  resetModalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetModalCloseText: {
+    fontSize: 14,
+    color: BrandColors.ink,
+    fontWeight: '600',
+  },
+  resetModalDesc: {
+    fontSize: 14,
+    color: BrandColors.muted,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  resetErrorBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  resetErrorText: {
+    color: '#DC2626',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  resetInput: {
+    height: 52,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: BrandColors.ink,
+    backgroundColor: BrandColors.paper,
+    marginBottom: 16,
+  },
+  resetSendBtn: {
+    height: 50,
+    backgroundColor: BrandColors.primary,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetSendBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  resetSuccessBox: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  resetSuccessEmoji: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  resetSuccessTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    marginBottom: 8,
+  },
+  resetSuccessDesc: {
+    fontSize: 14,
+    color: BrandColors.muted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 12,
+  },
+  resetDoneBtn: {
+    width: '100%',
+    height: 48,
+    backgroundColor: BrandColors.primary,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetDoneBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700',
   },
 });

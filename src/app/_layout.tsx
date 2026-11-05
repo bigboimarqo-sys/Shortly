@@ -15,11 +15,21 @@ import AppTabs from '@/components/app-tabs';
 import { AuthProvider } from '@/context/auth-context';
 import { ScreenshotsProvider } from '@/context/screenshots-context';
 import { SubscriptionProvider } from '@/context/subscription-context';
+import { ThemeProviderCustom, useAppTheme } from '@/context/theme-context';
 
 SplashScreen.preventAutoHideAsync();
 
+function RootNavigation() {
+  const { isDark } = useAppTheme();
+  return (
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <AnimatedSplashOverlay />
+      <AppTabs />
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -34,16 +44,15 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   return (
-    <AuthProvider>
-      <SubscriptionProvider>
-        <ScreenshotsProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <AnimatedSplashOverlay />
-            <AppTabs />
-          </ThemeProvider>
-        </ScreenshotsProvider>
-      </SubscriptionProvider>
-    </AuthProvider>
+    <ThemeProviderCustom>
+      <AuthProvider>
+        <SubscriptionProvider>
+          <ScreenshotsProvider>
+            <RootNavigation />
+          </ScreenshotsProvider>
+        </SubscriptionProvider>
+      </AuthProvider>
+    </ThemeProviderCustom>
   );
 }
 

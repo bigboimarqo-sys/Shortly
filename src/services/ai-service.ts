@@ -13,6 +13,8 @@
  * screenshot image or OCR text transmission to external third-party SDKs.
  */
 
+import { supabase } from '@/lib/supabase';
+
 export interface SmartAction {
   id: string;
   type: 'otp' | 'url' | 'phone' | 'email' | 'amount' | 'ref' | 'date';
@@ -339,9 +341,39 @@ export class AIService {
   }
 
   /**
-   * 4. 24/7 Live AI Customer Support Assistant Response Engine
+   * 4. 24/7 Live AI Customer Support Assistant Response Engine (Marcus)
+   * Connects to Supabase Edge Function proxy (Gemini 1.5 Flash with server-side API key)
+   * with automatic fallback to high-speed on-device rule engine.
    */
-  static generateSupportResponse(userMessage: string): SupportChatMessage {
+  static async generateSupportResponse(
+    userMessage: string,
+    history?: SupportChatMessage[]
+  ): Promise<SupportChatMessage> {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-support', {
+        body: { message: userMessage, history: history || [] },
+      });
+
+      if (!error && data && data.reply) {
+        return {
+          id: `ai-msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          sender: 'ai',
+          text: data.reply,
+          timestamp: Date.now(),
+          actionLink: data.actionLink,
+        };
+      }
+    } catch {
+      // Graceful offline fallback
+    }
+
+    return this.generateOfflineSupportResponse(userMessage);
+  }
+
+  /**
+   * On-device Offline Knowledge Engine for Marcus AI
+   */
+  static generateOfflineSupportResponse(userMessage: string): SupportChatMessage {
     const msg = userMessage.toLowerCase().trim();
     let text = '';
     let actionLink: SupportChatMessage['actionLink'] = undefined;

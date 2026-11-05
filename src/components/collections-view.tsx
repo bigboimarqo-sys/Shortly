@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
+import { EmptyState } from '@/components/empty-state';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
@@ -142,12 +143,13 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
 
               {/* 2-column Grid matching Collection detail.png */}
               {activeCollectionItems.length === 0 ? (
-                <View style={styles.emptyDetailCard}>
-                  <Text style={styles.emptyDetailTitle}>No screenshots in this collection</Text>
-                  <Text style={styles.emptyDetailSubtitle}>
-                    Assign screenshots to "{selectedCollection}" from the Library or Home feed.
-                  </Text>
-                </View>
+                <EmptyState
+                  emoji="📂"
+                  title="No screenshots in this collection"
+                  subtitle={`Assign screenshots to "${selectedCollection}" from your Library or Home feed.`}
+                  actionLabel="Back to Collections"
+                  onAction={() => setSelectedCollection(null)}
+                />
               ) : (
                 <View style={styles.detailGrid}>
                   {activeCollectionItems.map((item) => (
@@ -191,44 +193,54 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
 
             {/* Collections List with Visual Image Thumbnails */}
             <View style={styles.listContainer}>
-              {collectionsData.map((item) => (
-                <Pressable
-                  key={item.name}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Collection ${item.name}, ${item.count} items`}
-                  onPress={() => {
-                    setCollectionSubFilter('All');
-                    setSelectedCollection(item.name);
-                  }}
-                  style={({ pressed }) => [
-                    styles.collectionCard,
-                    pressed && { opacity: 0.88, backgroundColor: '#F0EDE3' },
-                  ]}>
-                  {/* Visual Image Preview Thumbnail (Fixes: on collection part no image is showing) */}
-                  <View style={styles.thumbWrapper}>
-                    {item.coverUri ? (
-                      <Image
-                        source={{ uri: item.coverUri }}
-                        style={styles.collectionThumbImage}
-                        contentFit="cover"
-                        transition={150}
-                        cachePolicy="memory-disk"
-                      />
-                    ) : (
-                      <View style={styles.collectionThumbPlaceholder}>
-                        <Folder color={BrandColors.muted} width={22} height={22} strokeWidth={2} />
-                      </View>
-                    )}
-                  </View>
+              {collectionsData.length === 0 ? (
+                <EmptyState
+                  emoji="📁"
+                  title="No collections yet"
+                  subtitle="Group receipts, recipes, or work screenshots into organized collections."
+                  actionLabel="Create Collection"
+                  onAction={() => setShowNewCollectionModal(true)}
+                />
+              ) : (
+                collectionsData.map((item) => (
+                  <Pressable
+                    key={item.name}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Collection ${item.name}, ${item.count} items`}
+                    onPress={() => {
+                      setCollectionSubFilter('All');
+                      setSelectedCollection(item.name);
+                    }}
+                    style={({ pressed }) => [
+                      styles.collectionCard,
+                      pressed && { opacity: 0.88, backgroundColor: '#F0EDE3' },
+                    ]}>
+                    {/* Visual Image Preview Thumbnail (Fixes: on collection part no image is showing) */}
+                    <View style={styles.thumbWrapper}>
+                      {item.coverUri ? (
+                        <Image
+                          source={{ uri: item.coverUri }}
+                          style={styles.collectionThumbImage}
+                          contentFit="cover"
+                          transition={150}
+                          cachePolicy="memory-disk"
+                        />
+                      ) : (
+                        <View style={styles.collectionThumbPlaceholder}>
+                          <Folder color={BrandColors.muted} width={22} height={22} strokeWidth={2} />
+                        </View>
+                      )}
+                    </View>
 
-                  <View style={styles.collectionInfo}>
-                    <Text style={styles.collectionName}>{item.name}</Text>
-                    <Text style={styles.collectionCount}>[{item.count}] items</Text>
-                  </View>
+                    <View style={styles.collectionInfo}>
+                      <Text style={styles.collectionName}>{item.name}</Text>
+                      <Text style={styles.collectionCount}>[{item.count}] items</Text>
+                    </View>
 
-                  <NavArrowRight color={BrandColors.muted} width={20} height={20} strokeWidth={2} />
-                </Pressable>
-              ))}
+                    <NavArrowRight color={BrandColors.muted} width={20} height={20} strokeWidth={2} />
+                  </Pressable>
+                ))
+              )}
             </View>
 
             {/* Free Plan Limit Notice matching Collections.png */}

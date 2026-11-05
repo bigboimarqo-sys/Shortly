@@ -1,4 +1,4 @@
-import { HeadsetHelp, NavArrowRight, Sparks } from 'iconoir-react-native';
+import { Check, HeadsetHelp, NavArrowRight, Sparks } from 'iconoir-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -14,12 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AISupportModal } from '@/components/ai-support-modal';
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
+import { BrandLogo } from '@/components/brand-logo';
 import { PaywallModal } from '@/components/paywall-modal';
 import { PrivacyDataSheet } from '@/components/privacy-data-sheet';
+import { PrivacyPolicyModal } from '@/components/privacy-policy-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { ScreenshotCategory, useScreenshots } from '@/context/screenshots-context';
 import { useSubscription } from '@/context/subscription-context';
+import { useAppTheme } from '@/context/theme-context';
 import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
 import {
   formatSubscriptionDate,
@@ -67,6 +70,10 @@ export function SettingsView({
   const [autoCapture, setAutoCapture] = useState(true);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [showPrivacyDataSheet, setShowPrivacyDataSheet] = useState(false);
+  const [showAppearanceModal, setShowAppearanceModal] = useState(false);
+  const { appearance, setAppearance } = useAppTheme();
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -178,24 +185,27 @@ export function SettingsView({
             </Pressable>
 
             <Pressable
-              onPress={() =>
-                Alert.alert('Appearance', 'Shotly supports automatic System theme matching light and dark modes.')
-              }
+              accessibilityRole="button"
+              accessibilityLabel="Change Appearance"
+              onPress={() => setShowAppearanceModal(true)}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>Appearance</Text>
-              <Text style={styles.rowValue}>System</Text>
+              <Text style={styles.rowValue}>
+                {appearance === 'system'
+                  ? 'System →'
+                  : appearance === 'light'
+                  ? 'Light →'
+                  : 'Dark →'}
+              </Text>
             </Pressable>
 
             <Pressable
-              onPress={() =>
-                Alert.alert(
-                  'About Shotly',
-                  'Shotly v1.0.0 (Build 42)\nAuto-organises and reads your screenshots on-device.\nMarket: South Africa'
-                )
-              }
+              accessibilityRole="button"
+              accessibilityLabel="About Shotly"
+              onPress={() => setShowAboutModal(true)}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>About Shotly</Text>
-              <Text style={styles.rowValue}>v1.0.0</Text>
+              <Text style={styles.rowValue}>v1.0.0 →</Text>
             </Pressable>
           </View>
 
@@ -369,6 +379,154 @@ export function SettingsView({
           </View>
         </View>
       </Modal>
+
+      {/* Appearance Modal */}
+      <Modal
+        visible={showAppearanceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAppearanceModal(false)}>
+        <View style={styles.catModalBackdrop}>
+          <View style={styles.catModalContent}>
+            <View style={styles.catModalHeader}>
+              <View>
+                <Text style={styles.catModalTitle}>Appearance</Text>
+                <Text style={styles.catModalSubtitle}>Choose your app theme</Text>
+              </View>
+              <Pressable
+                onPress={() => setShowAppearanceModal(false)}
+                style={({ pressed }) => [styles.catCloseBtn, pressed && { opacity: 0.7 }]}>
+                <Text style={styles.catCloseBtnText}>Done</Text>
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 8, paddingVertical: 12 }}>
+              {[
+                { id: 'system', title: 'System Default', desc: 'Automatically matches device settings' },
+                { id: 'light', title: 'Light Mode', desc: 'Paper (#F6F4EE) & Surface (#FFFFFF)' },
+                { id: 'dark', title: 'Dark Mode', desc: 'Sleek OLED dark surface (#14181F)' },
+              ].map((opt) => {
+                const isSelected = appearance === opt.id;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => setAppearance(opt.id as any)}
+                    style={({ pressed }) => [
+                      styles.appearanceOptionCard,
+                      isSelected && styles.appearanceOptionSelected,
+                      pressed && { opacity: 0.8 },
+                    ]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.appearanceOptionTitle, isSelected && { color: BrandColors.primary }]}>
+                        {opt.title}
+                      </Text>
+                      <Text style={styles.appearanceOptionDesc}>{opt.desc}</Text>
+                    </View>
+                    {isSelected && (
+                      <View style={styles.appearanceCheckCircle}>
+                        <Check color="#FFFFFF" width={14} height={14} strokeWidth={3} />
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* About Shotly Modal */}
+      <Modal
+        visible={showAboutModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAboutModal(false)}>
+        <View style={styles.catModalBackdrop}>
+          <View style={styles.catModalContent}>
+            <View style={styles.catModalHeader}>
+              <View>
+                <Text style={styles.catModalTitle}>About Shotly</Text>
+                <Text style={styles.catModalSubtitle}>Version 1.0.0 (Build 42)</Text>
+              </View>
+              <Pressable
+                onPress={() => setShowAboutModal(false)}
+                style={({ pressed }) => [styles.catCloseBtn, pressed && { opacity: 0.7 }]}>
+                <Text style={styles.catCloseBtnText}>Done</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <View style={styles.aboutCardContent}>
+                <View style={styles.aboutLogoBox}>
+                  <BrandLogo variant="wordmark" height={44} />
+                </View>
+
+                <Text style={styles.aboutLeadText}>
+                  Shotly auto-imports screenshots, reads their text on-device, categorises them, and makes them instantly searchable.
+                </Text>
+
+                <View style={styles.aboutFeatureList}>
+                  <View style={styles.aboutFeatureRow}>
+                    <Text style={styles.aboutFeatureIcon}>🔒</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.aboutFeatureHeading}>100% Offline-First Privacy</Text>
+                      <Text style={styles.aboutFeatureBody}>
+                        Your images and OCR text stay strictly on your phone. No third-party SDK or external LLM ever receives screenshot pixels.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.aboutFeatureRow}>
+                    <Text style={styles.aboutFeatureIcon}>⚡</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.aboutFeatureHeading}>On-Device Machine Learning OCR</Text>
+                      <Text style={styles.aboutFeatureBody}>
+                        Powered by Apple Vision (iOS) and Google ML Kit (Android) for blazing fast on-device text indexing.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.aboutFeatureRow}>
+                    <Text style={styles.aboutFeatureIcon}>🇿🇦</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.aboutFeatureHeading}>Designed for South Africa</Text>
+                      <Text style={styles.aboutFeatureBody}>
+                        Built for South African users with Rand (ZAR) currency detection, local receipts, and South African payment gateways.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.aboutLinksRow}>
+                  <Pressable
+                    onPress={() => {
+                      setShowAboutModal(false);
+                      setTimeout(() => setShowPrivacyModal(true), 300);
+                    }}
+                    style={styles.aboutLinkBtn}>
+                    <Text style={styles.aboutLinkBtnText}>Privacy Policy</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => {
+                      setShowAboutModal(false);
+                      setTimeout(() => setShowPaywall(true), 300);
+                    }}
+                    style={styles.aboutLinkBtn}>
+                    <Text style={styles.aboutLinkBtnText}>Subscription Terms</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModal
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -759,5 +917,99 @@ const styles = StyleSheet.create({
     color: BrandColors.muted,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  appearanceOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: BrandColors.paper,
+    borderWidth: 1.5,
+    borderColor: BrandColors.border,
+  },
+  appearanceOptionSelected: {
+    borderColor: BrandColors.primary,
+    backgroundColor: '#E6F4FE',
+  },
+  appearanceOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    fontFamily: 'SpaceGrotesk-Bold',
+  },
+  appearanceOptionDesc: {
+    fontSize: 12,
+    color: BrandColors.muted,
+    marginTop: 2,
+  },
+  appearanceCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: BrandColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aboutCardContent: {
+    paddingVertical: 12,
+  },
+  aboutLogoBox: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  aboutLeadText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: BrandColors.ink,
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  aboutFeatureList: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  aboutFeatureRow: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: BrandColors.paper,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+  },
+  aboutFeatureIcon: {
+    fontSize: 22,
+  },
+  aboutFeatureHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: BrandColors.ink,
+    fontFamily: 'SpaceGrotesk-Bold',
+    marginBottom: 2,
+  },
+  aboutFeatureBody: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: BrandColors.muted,
+  },
+  aboutLinksRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+    paddingTop: 8,
+  },
+  aboutLinkBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: BrandColors.paper,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+  },
+  aboutLinkBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: BrandColors.primary,
   },
 });

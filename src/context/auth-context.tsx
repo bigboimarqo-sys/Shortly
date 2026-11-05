@@ -21,6 +21,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: Error | null; user: User | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; user: User | null }>;
   signInWithOAuth: (provider: 'google' | 'apple') => Promise<{ error: Error | null; user: User | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -356,6 +357,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
+    try {
+      const redirectUrl = Linking.createURL('auth/callback');
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectUrl,
+      });
+      if (error) {
+        console.warn('Supabase resetPassword error:', error);
+        return { error };
+      }
+      return { error: null };
+    } catch (err: any) {
+      console.warn('resetPassword exception:', err);
+      return { error: err };
+    }
+  };
+
   const signOut = async () => {
     setIsLoading(true);
     try {
@@ -385,6 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signIn,
         signInWithOAuth,
+        resetPassword,
         signOut,
       }}>
       {children}

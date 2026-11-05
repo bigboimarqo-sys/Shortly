@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
+import { EmptyState } from '@/components/empty-state';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
@@ -230,7 +231,15 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
           </ScrollView>
 
           {/* Categorised Screenshots View */}
-          {activeFilter === 'All' ? (
+          {screenshots.length === 0 ? (
+            <EmptyState
+              emoji="📸"
+              title="No screenshots found"
+              subtitle="Shotly automatically scans your photo library on-device to organize your screenshots into categories."
+              actionLabel="Import Screenshots"
+              onAction={() => setShowImportModal(true)}
+            />
+          ) : activeFilter === 'All' ? (
             /* Show Grouped by Categories */
             <View style={styles.groupedSection}>
               {groupedCategories.map((group) => {
@@ -332,6 +341,14 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 </View>
               </View>
             </View>
+          ) : filteredScreenshots.length === 0 ? (
+            <EmptyState
+              emoji="🔍"
+              title={`No ${activeFilter} screenshots`}
+              subtitle={`No screenshots categorized under "${activeFilter}" yet. Import new screenshots or clear the filter.`}
+              actionLabel="Show All Screenshots"
+              onAction={() => setActiveFilter('All')}
+            />
           ) : (
             /* Show Selected Category Grid */
             <View style={styles.filteredGridSection}>
