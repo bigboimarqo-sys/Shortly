@@ -1,5 +1,6 @@
 import { Check, NavArrowRight, Sparks, Xmark } from 'iconoir-react-native';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnalyticsService } from '@/services/analytics-service';
 import {
   ActivityIndicator,
   Alert,
@@ -110,6 +111,13 @@ export function PaywallModal({
       subscriptionExpiryDateFormatted: formatSubscriptionDate(dates.expiry),
     };
   }, [selectedPlan]);
+
+  // Track paywall impressions securely in PostHog
+  useEffect(() => {
+    if (visible) {
+      AnalyticsService.track('paywall_viewed', { initial_plan: selectedPlan });
+    }
+  }, [visible]);
 
   // Reset screen states on modal close
   const handleClose = () => {

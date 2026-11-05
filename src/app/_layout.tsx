@@ -16,6 +16,8 @@ import { AuthProvider } from '@/context/auth-context';
 import { ScreenshotsProvider } from '@/context/screenshots-context';
 import { SubscriptionProvider } from '@/context/subscription-context';
 import { ThemeProviderCustom, useAppTheme } from '@/context/theme-context';
+import { AnalyticsService } from '@/services/analytics-service';
+import { CrashReporting } from '@/services/crash-reporting-service';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +38,12 @@ export default function RootLayout() {
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
   });
+
+  useEffect(() => {
+    CrashReporting.init();
+    AnalyticsService.init();
+    AnalyticsService.track('app_opened');
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

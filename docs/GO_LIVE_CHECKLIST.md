@@ -85,10 +85,14 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 
 ## 5. Telemetry & Crash Reporting
 
-- [ ] **PostHog Analytics**:
-  - Configure `POSTHOG_API_KEY` for tracking paywall impressions and conversions (without tracking screenshot images or personal data).
-- [ ] **Crash Reporting**:
-  - Configure Sentry DSN or Firebase Crashlytics for real-time error tracking on release builds.
+- [x] **PostHog Analytics**:
+  - Configured in `src/services/analytics-service.ts` with strict privacy filters (zero screenshot images, file paths, or OCR text).
+  - Env variables set in `.env`: `EXPO_PUBLIC_POSTHOG_API_KEY` and `EXPO_PUBLIC_POSTHOG_HOST`.
+  - Initialized on app startup in `_layout.tsx`, tracking paywall impressions and conversions.
+- [x] **Crash Reporting (Sentry)**:
+  - Configured in `src/services/crash-reporting-service.ts` with error sanitizer and global unhandled error hooks.
+  - Env variable set in `.env`: `EXPO_PUBLIC_SENTRY_DSN`.
+  - Initialized on app startup in `_layout.tsx`.
 
 ---
 
