@@ -7,8 +7,8 @@ This checklist tracks all credentials, backend proxies, API keys, store configur
 ## 1. AI Assistant & Customer Support ("Marcus")
 
 ### A. Gemini API Key & Supabase Edge Function Proxy
-- [ ] **Generate Gemini API Key**:
-  - Get free key from [Google AI Studio](https://aistudio.google.com/apikey).
+- [x] **Generate Gemini API Key**:
+  - Live key configured and tested against Google Generative Language API (`gemini-3.5-flash-lite`).
 - [x] **Build Supabase Edge Function Proxy**:
   - Created `supabase/functions/ai-support/index.ts` with CORS, token limits, system prompt for South African pricing/Shotly features, and safe error handling.
   - Client wired in `src/services/ai-service.ts` with on-device offline fallback engine.
