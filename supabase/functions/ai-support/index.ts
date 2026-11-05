@@ -92,32 +92,44 @@ serve(async (req: Request) => {
       parts: [{ text: message }],
     });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const candidateModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+    let geminiResponse: Response | null = null;
+    let lastErrText = '';
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 600,
-        },
-      }),
-    });
+    for (const model of candidateModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+        const res = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents,
+            generationConfig: {
+              temperature: 0.5,
+              maxOutputTokens: 600,
+            },
+          }),
+        });
 
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error('Gemini API error:', errText);
+        if (res.ok) {
+          geminiResponse = res;
+          break;
+        } else {
+          lastErrText = await res.text();
+          console.warn(`Model ${model} returned non-200:`, lastErrText);
+        }
+      } catch (err: any) {
+        lastErrText = String(err);
+      }
+    }
+
+    if (!geminiResponse || !geminiResponse.ok) {
+      console.error('All Gemini candidate models failed:', lastErrText);
       return new Response(
         JSON.stringify({
           error: 'Gemini upstream error',
-          details: errText,
+          details: lastErrText,
           fallback: true,
         }),
         {

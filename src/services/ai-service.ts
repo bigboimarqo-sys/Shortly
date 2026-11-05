@@ -349,6 +349,7 @@ export class AIService {
     userMessage: string,
     history?: SupportChatMessage[]
   ): Promise<SupportChatMessage> {
+    // 1. Try Supabase Edge Function proxy (secure production backend)
     try {
       const { data, error } = await supabase.functions.invoke('ai-support', {
         body: { message: userMessage, history: history || [] },
@@ -364,9 +365,78 @@ export class AIService {
         };
       }
     } catch {
-      // Graceful offline fallback
+      // Continue to direct API fallback
     }
 
+    // 2. Direct Gemini API call fallback if EXPO_PUBLIC_GEMINI_API_KEY is configured
+    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    if (apiKey && apiKey.length > 20 && !apiKey.includes('your_gemini')) {
+      try {
+        const candidateModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+        const messagesHistory = Array.isArray(history) ? history.slice(-6) : [];
+        const contents = messagesHistory.map(h => ({
+          role: h.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: h.text }],
+        }));
+        contents.push({ role: 'user', parts: [{ text: userMessage }] });
+
+        const systemPrompt = `You are Marcus, the friendly, empathetic, and knowledgeable 24/7 AI Customer Support Assistant for "Shotly".
+Shotly is an offline-first mobile app for Android and iOS in South Africa that automatically organizes screenshots, reads text on-device with OCR, categorizes screenshots, and makes them instantly searchable.
+Brand: Shotly (Primary Color: #38679B, Paper: #F6F4EE, Ink: #14181F)
+Pricing (ZAR): Free: R0 (100 screenshots limit, 7-day free trial), Plus: R39/mo or R349/yr (Unlimited, Clean-Up, Private Vault), Pro: R79/mo or R699/yr, Team: R149/mo (5 seats).
+7-day free trial on card/wallets. Cancel anytime.
+Privacy Hard Rule: Screenshot images and OCR text stay strictly 100% on the user's phone.
+Respond warmly, concisely, and helpfully.
+If appropriate, recommend an in-app destination at the very end on a new line in this exact format:
+ACTION_LINK: paywall | settings | permissions | collections | clean_up`;
+
+        for (const model of candidateModels) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: systemPrompt }] },
+              contents,
+              generationConfig: { temperature: 0.5, maxOutputTokens: 600 },
+            }),
+          });
+
+          if (res.ok) {
+            const resJson = await res.json();
+            let replyText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (replyText) {
+              let actionType: 'paywall' | 'permissions' | 'settings' | 'collections' | 'clean_up' | undefined;
+              let actionLabel: string | undefined;
+              const actionMatch = replyText.match(/ACTION_LINK:\s*(paywall|settings|permissions|collections|clean_up)/i);
+              if (actionMatch) {
+                actionType = actionMatch[1].toLowerCase() as any;
+                replyText = replyText.replace(/ACTION_LINK:.*$/im, '').trim();
+                const labels: Record<string, string> = {
+                  paywall: 'View Subscription Model',
+                  settings: 'Open Settings',
+                  permissions: 'Check Storage Permissions',
+                  collections: 'Open Collections',
+                  clean_up: 'Open Clean-Up Tool',
+                };
+                actionLabel = labels[actionType!] || 'Open';
+              }
+
+              return {
+                id: `ai-msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                sender: 'ai',
+                text: replyText,
+                timestamp: Date.now(),
+                actionLink: actionType ? { type: actionType, label: actionLabel || 'Open' } : undefined,
+              };
+            }
+          }
+        }
+      } catch {
+        // Fall through to offline response engine
+      }
+    }
+
+    // 3. High-speed on-device offline rule engine fallback
     return this.generateOfflineSupportResponse(userMessage);
   }
 
