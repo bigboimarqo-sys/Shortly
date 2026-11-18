@@ -78,7 +78,9 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 - [x] Android: Configured `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` in `app.json`.
 
 ### B. Machine Learning OCR Bundling
-- [ ] Standalone build includes Google ML Kit (Android) and Apple Vision (iOS) native binary assets.
+- [x] Standalone build includes Google ML Kit (Android) and Apple Vision (iOS) via `expo-text-extractor`.
+  - Wired into `OcrService` (`src/services/ocr-service.ts`) and `ScreenshotsContext` (`src/context/screenshots-context.tsx`).
+  - Automatically runs real OCR on imported and gallery screenshots, extracts semantic tags, and infers categories from extracted text.
 - [ ] Test offline mode: Turn on airplane mode and verify OCR search runs with zero internet connection.
 
 ---
@@ -98,7 +100,7 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 
 ## 6. App Store & Play Store Listing Assets
 
-- [ ] App Icons: 1024x1024 PNG (no transparency).
+- [x] App Icons: 1024x1024 PNG (no transparency) & Android adaptive icons generated from brand vectors.
 - [x] Splash Screens: Light and dark mode support (`AnimatedSplashOverlay` with Space Grotesk font loading).
 - [ ] Screenshots: 6.7" iPhone & 12.9" iPad, 1080x1920 Android phone & tablet.
 - [ ] Age Rating: Complete questionnaire (12+ recommended due to device photo scanning).

@@ -1,3 +1,4 @@
+import '../global.css';
 import {
   SpaceGrotesk_400Regular,
   SpaceGrotesk_500Medium,
@@ -13,6 +14,7 @@ import { useColorScheme } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { ShotlyIconlyProvider } from '@/components/iconly-icons';
 import { AuthProvider } from '@/context/auth-context';
 import { ScreenshotsProvider } from '@/context/screenshots-context';
 import { SubscriptionProvider } from '@/context/subscription-context';
@@ -26,8 +28,10 @@ function RootNavigation() {
   const { isDark } = useAppTheme();
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <ShotlyIconlyProvider>
+        <AnimatedSplashOverlay />
+        <AppTabs />
+      </ShotlyIconlyProvider>
     </ThemeProvider>
   );
 }

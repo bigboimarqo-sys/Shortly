@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Space — Clickable Prototype</title>
+<style>
+:root{--bg:#F7F7F4;--sf:#fff;--ink:#1B2A4A;--mut:#5A6472;--ln:#E4E4E0;--pri:#1B2A4A;--onpri:#fff;--acc:#E8A33D;--ok:#2C6E49;--chrome:#EDEEF1;--side:#121D33}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1626;--sf:#16213A;--ink:#EEF1F6;--mut:#9AA6B8;--ln:#2A3856;--pri:#E8A33D;--onpri:#121D33;--ok:#5FBF8A;--chrome:#0A101C;--side:#0A101C}}
+:root[data-theme="dark"]{--bg:#0E1626;--sf:#16213A;--ink:#EEF1F6;--mut:#9AA6B8;--ln:#2A3856;--pri:#E8A33D;--onpri:#121D33;--ok:#5FBF8A;--chrome:#0A101C;--side:#0A101C}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--chrome);color:var(--ink);font:14px Calibri,"Segoe UI",Arial,sans-serif}
+h2,h3,nav h1{font-family:Cambria,Georgia,serif;margin:0}h2{font-size:20px;margin:8px 0 2px}h3{font-size:16px}
+.w{display:flex;min-height:100vh}
+nav{width:250px;flex:none;background:var(--side);color:#C9D2E0;padding:18px 14px;position:sticky;top:env(safe-area-inset-top,0px);max-height:100vh;overflow:auto;align-self:flex-start}
+nav h1{color:#fff;font-size:24px}nav i{color:var(--acc);font-size:12px}nav h5{margin:18px 0 6px;font-size:10px;letter-spacing:1px;color:#6B7A8F}
+.it{padding:6px 8px;border-radius:6px;font-size:12.5px;cursor:pointer;display:flex;gap:8px}.it:hover{background:#1E2E52}.it.on{background:var(--acc);color:#121D33;font-weight:700}.it u{text-decoration:none;width:16px;font-size:10px;opacity:.6}
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+#cr{font-size:12.5px;color:var(--mut);margin:0 0 6px}#jm{display:none;margin-bottom:10px}
+.ph{width:375px;height:780px;background:#000;border-radius:42px;padding:11px;box-shadow:0 24px 50px #0005}
+#sc{background:var(--bg);border-radius:31px;height:100%;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.sb{height:28px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:700}
+.hd,.tr{display:flex;align-items:center;gap:10px;padding:4px 16px 10px;flex:none}.tr{justify-content:space-between}
+.hd i,.tr i{width:30px;height:30px;border-radius:15px;background:var(--sf);border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-style:normal;cursor:pointer}
+.ct{flex:1;overflow:auto;scrollbar-width:none}.ct::-webkit-scrollbar{display:none}
+.pd{padding:0 18px}.mu,small{color:var(--mut)}small{font-size:11.5px;display:block}
+h4{margin:16px 18px 8px;font-size:13px}.pd h4{margin-left:0;margin-right:0}
+.lc{background:var(--sf);border:1px solid var(--ln);border-radius:14px;overflow:hidden;margin-bottom:12px;cursor:pointer}.lc.sm{flex:none;width:190px;margin-right:10px}
+.im{height:130px;position:relative}.sm .im{height:105px}.bw{padding:10px 12px}.bw b{display:block}.pr{margin-top:3px}
+.ht{position:absolute;top:8px;right:10px;font-size:20px;color:#fff;text-shadow:0 1px 3px #0008}.dt{position:absolute;bottom:6px;left:0;right:0;text-align:center;color:#fff;font-size:7px;letter-spacing:2px}
+.rl{display:flex;overflow-x:auto;padding:0 18px 4px;scrollbar-width:none}.pd .rl{padding:0}
+.cd{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:12px;margin-bottom:12px;cursor:pointer}.cd.on{outline:2px solid var(--acc)}
+.row{display:flex;align-items:center;gap:10px}.row>span{flex:1}
+.bn,.b2{text-align:center;padding:13px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:10px}.bn{background:var(--pri);color:var(--onpri)}.b2{border:1.5px solid var(--pri)}
+.sm.bn,.sm.b2{padding:8px;font-size:12px}
+.bt{flex:none;padding:10px 18px 16px;border-top:1px solid var(--ln);background:var(--bg);display:flex;gap:12px;align-items:center}.bt .bn{flex:1;margin:0}.bt.in .bn{flex:none;padding:12px 18px}
+.tb{display:flex;border-top:1px solid var(--ln);background:var(--sf);flex:none}.tb div{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--mut);padding:8px 0 12px;cursor:pointer}.tb b{display:block;font-size:16px}.tb .on{color:var(--ink);box-shadow:inset 0 2px var(--acc)}
+.pill{margin:6px 18px 12px;padding:12px 16px;border-radius:30px;background:var(--sf);border:1px solid var(--ln);display:flex;gap:10px;align-items:center;cursor:pointer;box-shadow:0 2px 8px #0002}.pill b{display:block}
+.seg{display:flex;margin:0 18px 12px;border-bottom:1px solid var(--ln)}.pd .seg{margin:0 0 12px}.seg div{flex:1;text-align:center;padding:9px 0;font-weight:700;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent}.seg .on{color:var(--ink);border-color:var(--acc)}
+.ib{display:flex;gap:18px;padding:0 18px 4px;overflow-x:auto;scrollbar-width:none}.ib div{text-align:center;font-size:11px;color:var(--mut);padding-bottom:6px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}.ib b{display:block;font-size:20px}.ib .on{color:var(--ink);border-color:var(--ink)}
+.ch{display:inline-block;padding:7px 13px;border:1px solid var(--ln);border-radius:20px;margin:0 6px 6px 0;background:var(--sf);font-size:12px;font-weight:700;cursor:pointer}.ch.on{background:var(--pri);color:var(--onpri);border-color:var(--pri)}
+.f{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:8px 12px;margin-bottom:10px}.f label{display:block;font-size:10px;font-weight:700;color:var(--mut)}.f input{border:0;background:transparent;color:var(--ink);width:100%;font:inherit;outline:0;padding:2px 0}
+.wn{border:1.5px solid var(--acc);border-radius:12px;padding:12px;margin:10px 0 14px;font-size:12.5px}
+.fm,.fab{position:absolute;bottom:76px;background:var(--pri);color:var(--onpri);font-weight:700;cursor:pointer;box-shadow:0 6px 16px #0004}.fm{left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px}.fab{right:18px;width:50px;height:50px;border-radius:25px;font-size:26px;display:flex;align-items:center;justify-content:center}
+.ts{position:absolute;left:18px;right:18px;bottom:84px;background:#121D33;color:#fff;padding:12px;border-radius:10px;text-align:center;font-size:12.5px}
+.mp{flex:1;position:relative;background:repeating-linear-gradient(45deg,var(--ln),var(--ln) 10px,var(--bg) 10px,var(--bg) 20px)}.pn{position:absolute;background:var(--pri);color:var(--onpri);padding:6px 10px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer}.mpb{height:90px;border-radius:12px;margin-bottom:10px;background:repeating-linear-gradient(45deg,var(--ln),var(--ln) 8px,var(--bg) 8px,var(--bg) 16px)}
+.gl{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:85px 85px;gap:3px;margin-bottom:12px;cursor:pointer;position:relative}.gl div:first-child{grid-row:span 2}.gl span{position:absolute;right:8px;bottom:8px;background:var(--sf);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.bd{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;background:var(--pri);color:var(--onpri)}.vf{color:var(--ok);display:inline}.rp{margin:14px 0;cursor:pointer;text-decoration:underline}
+.av{width:38px;height:38px;border-radius:50%;background:var(--pri);color:var(--onpri);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.li{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--ln);cursor:pointer}
+.bb{max-width:75%;padding:9px 12px;border-radius:14px;margin-bottom:8px;font-size:13px}.bb.m{background:var(--pri);color:var(--onpri);margin-left:auto}.bb.t{background:var(--sf);border:1px solid var(--ln)}
+.tg{width:40px;height:22px;border-radius:11px;background:var(--ln);position:relative;cursor:pointer}.tg.on{background:var(--acc)}.tg:after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:9px;background:#fff}.tg.on:after{left:20px}
+.ot{display:flex;gap:8px;margin:14px 0}.ot div{flex:1;text-align:center;padding:12px 0;border:1px solid var(--ln);border-radius:10px;background:var(--sf);font-weight:700}
+.sp{flex:1;background:linear-gradient(160deg,#121D33,#1B2A4A);color:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px 24px}.sp .sb{align-self:stretch;padding:0}.sp .bn{background:var(--acc);color:#121D33;align-self:stretch}.sp .b2{border-color:#fff;align-self:stretch}.sp small{color:#C9D2E0}
+.lg{position:relative;width:70px;height:70px;margin-bottom:14px}.lg i{position:absolute;width:46px;height:46px;border-radius:10px}.lg i:first-child{border:2px solid var(--acc)}.lg i:last-child{right:0;bottom:0;background:var(--acc)}
+.pr1{background:var(--pri);color:var(--onpri)}.pr1 small{color:inherit;opacity:.8}.ill{height:150px;border-radius:14px;background:linear-gradient(135deg,var(--pri),#2E3F63);margin:16px 0}
+@media (max-width:820px){nav{display:none}.w{display:block}#jm{display:block}.ph{width:100%;max-width:400px;height:calc(100dvh - 110px);padding:6px;border-radius:30px}}
+</style></head>
+<body>
+<div class="w"><nav id="nv"></nav><main><p id="cr"></p><select id="jm" aria-label="Jump to screen"></select><div class="ph"><div id="sc"></div></div></main></div>
+<script>
+const $=s=>document.querySelector(s);
+const GR=[["Auth & onboarding","splash:Splash,onboard:Onboarding carousel,signup:Sign up,login:Log in,otp:OTP verification"],["Account setup","acct:Account type selection"],["Seeker core","home:Home,search:Search,filters:Filters,resLive:Search results — Live,resStore:Search results — Store,map:Map view,detL:Listing detail — Live,detS:Listing detail — Store,gallery:Photo gallery,agent:Agent/landlord profile,contact:Contact sheet,report:Report listing,cross:Cross-sell prompt,inbox:Messages / inbox,chat:Chat thread,wish:Wishlists"],["Owner / agency","dash:Owner dashboard,addCat:Add listing — category,addLive:Add listing — Live form,addStore:Add listing — Store form,oInbox:Owner inbox,billing:Billing & subscription,feature:Feature a listing"],["Shared / account","account:Account settings,notif:Notification preferences,help:Help & support"]];
+const N=GR.flatMap(([g,s])=>s.split(",").map(x=>{const[i,...n]=x.split(":");return[g,i,n.join(":")]}));
+const L=[
+{id:1,k:"Rent",t:"3 Bed Townhouse",a:"Fourways",p:"R18,500/mo",f:"3 bed · 2 bath · 2 parking",ty:"Townhouses",g:0,ag:0,ft:["Pet friendly","Garden","Secure estate"]},
+{id:2,k:"Buy",t:"2 Bed Apartment",a:"Rosebank",p:"R2.1M",f:"2 bed · 1 bath · 1 parking",ty:"Flats",g:1,ag:1,ft:["Balcony","Gym","Fibre-ready"]},
+{id:3,k:"Rent",t:"4 Bed House",a:"Sandton",p:"R32,000/mo",f:"4 bed · 3 bath · 2 parking",ty:"Houses",g:2,ag:0,ft:["Pool","Solar","Alarm"]},
+{id:4,k:"Store",t:"Self-Storage Unit",a:"Randburg",p:"R650/mo",f:"5 m² · 24/7 access",ty:"Self-storage",g:3,ag:2,ft:["CCTV","Drive-up","Insured"]},
+{id:5,k:"Store",t:"Warehouse Space",a:"Midrand",p:"R45/m²",f:"800 m² · Loading bay",ty:"Warehouses",g:4,ag:2,ft:["Loading bay","Security","Three-phase power"]},
+{id:6,k:"Buy",t:"3 Bed Cluster Home",a:"Midrand",p:"R1.65M",f:"3 bed · 2 bath · 2 parking",ty:"Townhouses",g:5,ag:1,ft:["Pet friendly","Braai area"]}];
+const AG=[{n:"Johannesburg Realty",v:1,c:42},{n:"Priya Naidoo",v:1,c:9},{n:"Thabo Nkosi",v:0,c:3}];
+const CS=[{s:"Aisha Patel",l:1,m:[["m","Hi, is this still available for the 1st?"],["t","Yes, it is. Happy to arrange a viewing."]]},{s:"Daniel Moyo",l:5,m:[["m","Can I view the warehouse this weekend?"],["t","Saturday 10:00 works."]]}];
+const LD={1:[4,9,2,3],3:[1,2,0,1],4:[6,8,3,2],5:[2,5,1,0]};
+const S={tab:"Rent",ty:"",guest:true,own:false,acct:0,pend:null,W:{Shortlist:[1],"Storage ideas":[5]},N:[1,1,0,0]};
+let st=["splash"],P={};
+const V={};
+const gr=i=>`linear-gradient(135deg,hsl(${i*47+210},35%,32%),hsl(${i*47+240},40%,50%))`;
+const fv=id=>Object.values(S.W).some(a=>a.includes(+id));
+const fl=()=>L.filter(l=>l.k==S.tab&&(!S.ty||l.ty==S.ty));
+const sb=`<div class="sb"><span>9:41</span><span>5G ▮▮▮</span></div>`;
+const hd=(t,b=1)=>`<div class="hd">${b?`<i data-d="bk">‹</i>`:""}<h3>${t}</h3></div>`;
+const ch=(t,a="cx",on=0)=>`<span class="ch${on?" on":""}" data-d="${a}">${t}</span>`;
+const fld=(l,v="")=>`<div class="f"><label>${l}</label><input placeholder="${v}"></div>`;
+const seg=()=>`<div class="seg">${["Rent","Buy","Store"].map(t=>`<div class="${t==S.tab?"on":""}" data-d="tab:${t}">${t}</div>`).join("")}</div>`;
+const bar=a=>{const T=S.own?[["dash","▤","Listings"],["oInbox","✉","Inbox"],["billing","R","Billing"],["account","☺","Account"]]:[["home","⌕","Explore"],["wish","♡","Wishlists"],["inbox","✉","Messages"],["account","☺","Profile"]];return`<div class="tb">${T.map(t=>`<div class="${t[0]==a?"on":""}" data-d="rs:${t[0]}"><b>${t[1]}</b>${t[2]}</div>`).join("")}</div>`};
+const card=(l,c="")=>`<div class="lc ${c}" data-g="${l.k=="Store"?"detS":"detL"}:${l.id}"><div class="im" style="background:${gr(l.g)}"><span class="ht" data-d="fav:${l.id}">${fv(l.id)?"♥":"♡"}</span><span class="dt">● ○ ○</span></div><div class="bw"><b>${l.t}</b><small>${l.a} · ${l.f}</small><b class="pr">${l.p}</b></div></div>`;
+const find=()=>L.find(x=>x.id==P.id)||L[0];
+const bub=(c,o)=>c.m.map(m=>`<div class="bb ${o?(m[0]=="m"?"t":"m"):m[0]}">${m[1]}</div>`).join("");
+
+V.splash=()=>`<div class="sp">${sb}<div style="flex:1"></div><div class="lg"><i></i><i></i></div><h1 style="font-family:Cambria,serif;font-size:34px;margin:0">SPACE</h1><div style="color:var(--acc);font-style:italic;margin:6px 0 auto">Find your space.</div><div class="bn" data-g="onboard">Continue</div></div>`;
+V.onboard=()=>sb+`<div class="ct pd"><div class="ill"></div><h2>Find a home. Buy a place. Store your things.</h2><p class="mu">Browse rentals, homes for sale and storage across the northern suburbs — no account needed. Contact the agent or landlord directly.</p></div><div class="bt" style="flex-direction:column;align-items:stretch"><div class="bn" data-d="rs:home">Start exploring</div><small style="text-align:center">Have an account? <b data-g="login" style="cursor:pointer">Log in</b> · <b data-g="signup" style="cursor:pointer">Sign up</b></small></div>`;
+V.signup=()=>sb+hd("Create account")+`<div class="ct pd">${fld("Full name","Your name")}${fld("Email","you@example.com")}${fld("Phone number","+27 82 000 0000")}<small>Protected by Cloudflare Turnstile — no puzzles unless something looks off.</small></div><div class="bt"><div class="bn" data-g="otp">Create account</div></div>`;
+V.login=()=>sb+hd("Log in")+`<div class="ct pd">${fld("Email or phone","you@example.com")}<small>We’ll text you a one-time code.</small></div><div class="bt"><div class="bn" data-g="otp">Continue</div></div>`;
+V.otp=()=>sb+hd("Verify your number")+`<div class="ct pd"><p class="mu">Enter the 6-digit code sent to +27 82 000 0000.</p><div class="ot">${[..."413290"].map(d=>`<div>${d}</div>`).join("")}</div><small>Resend code in 0:28</small></div><div class="bt"><div class="bn" data-d="verify">Verify</div></div>`;
+V.acct=()=>sb+hd("List your space")+`<div class="ct pd"><p class="mu">Tell us who’s listing. You can change this later.</p><div class="cd" data-d="acct:o"><b>Individual owner</b><small>Listing your own property or storage space</small></div><div class="cd" data-d="acct:a"><b>Agency</b><small>Managing listings for several clients</small></div></div>`;
+V.home=()=>{const T=S.tab,ic=T=="Store"?[["Self-storage","📦"],["Warehouses","🏭"],["Containers","🚢"]]:[["Houses","🏠"],["Flats","🏢"],["Townhouses","🏘"]],ls=fl(),ar=[...new Set(ls.map(l=>l.a))];return sb+`<div class="ct"><div class="pill" data-g="search">⌕<span><b>Where to?</b><small>Any area · ${T} · Any budget</small></span></div>${seg()}<div class="ib">${ic.map(i=>`<div class="${S.ty==i[0]?"on":""}" data-d="ty:${i[0]}"><b>${i[1]}</b>${i[0]}</div>`).join("")}</div>${ar.length?ar.map(a=>`<h4>${T=="Store"?"Space":"Popular"} in ${a}</h4><div class="rl">${ls.filter(l=>l.a==a).map(l=>card(l,"sm")).join("")}</div>`).join(""):`<p class="mu pd">Nothing matches that yet.</p>`}</div>`+bar("home")};
+V.search=()=>sb+hd("Search")+`<div class="ct pd"><h4>Where</h4>${["Sandton","Rosebank","Fourways","Randburg","Midrand"].map((a,i)=>ch(a,"cx",i==2)).join("")}<h4>What</h4>${seg()}<h4>Budget</h4>${ch("Under R10k")+ch("R10k–R25k","cx",1)+ch("R25k+")}<h4>Move-in date</h4>${fld("Optional","e.g. 1 December")}<div class="b2" data-g="filters">More filters</div></div><div class="bt"><div class="bn" data-g="${S.tab=="Store"?"resStore":"resLive"}">Search</div></div>`;
+V.filters=()=>{const s=S.tab=="Store";return sb+hd("Filters")+`<div class="ct pd">${s?`<h4>Space type</h4>${["Self-storage","Warehouse","Container"].map(c=>ch(c)).join("")}<h4>Size</h4>${["Under 10 m²","10–100 m²","100 m²+"].map(c=>ch(c)).join("")}<h4>Access</h4>${ch("24/7")+ch("Business hours")}`:`<h4>Bedrooms</h4>${["Any","1+","2+","3+","4+"].map(c=>ch(c)).join("")}<h4>Property type</h4>${["House","Flat","Townhouse"].map(c=>ch(c)).join("")}<h4>Listing type</h4>${ch("To let")+ch("For sale")}`}</div><div class="bt"><div class="bn" data-g="${s?"resStore":"resLive"}">Show results</div></div>`};
+const res=s=>{const ls=s?L.filter(l=>l.k=="Store"):L.filter(l=>l.k!="Store"&&(S.tab=="Store"||l.k==S.tab));return sb+hd(s?"Storage & warehouses":S.tab=="Buy"?"Homes for sale":"Homes to rent")+`<div class="ct pd"><div class="row"><span><small>${ls.length} places in your area</small></span><span class="ch" data-g="filters" style="flex:none">⚙ Filters</span></div>${ls.map(l=>card(l)).join("")}<div style="height:60px"></div></div><div class="fm" data-g="map:${s?"s":"l"}">⌖ Map</div>`+bar("home")};
+V.resLive=()=>res(0);V.resStore=()=>res(1);
+V.map=()=>{const ls=P.s=="s"?L.filter(l=>l.k=="Store"):L.filter(l=>l.k!="Store"),pos=[[24,70],[170,40],[110,150],[230,190],[60,240],[200,290]];return sb+hd("Map")+`<div class="mp">${ls.map((l,i)=>`<span class="pn" style="left:${pos[i][0]}px;top:${pos[i][1]}px" data-g="${l.k=="Store"?"detS":"detL"}:${l.id}">${l.p}</span>`).join("")}</div>`+bar("home")};
+V.detL=V.detS=()=>{const l=find(),g=AG[l.ag],s=l.k=="Store";return sb+`<div class="tr"><i data-d="bk">‹</i><i data-d="fav:${l.id}">${fv(l.id)?"♥":"♡"}</i></div><div class="ct"><div class="gl" data-g="gallery:${l.id}"><div style="background:${gr(l.g)}"></div><div style="background:${gr(l.g+1)}"></div><div style="background:${gr(l.g+2)}"></div><span>Show all photos</span></div><div class="pd"><span class="bd">${s?"Store":l.k=="Buy"?"For sale":"To let"}</span><h2>${l.t}</h2><small>${l.a}, Johannesburg</small><p>${l.f}</p><h4>What this ${s?"space":"place"} offers</h4>${l.ft.map(x=>`<span class="ch">${x}</span>`).join("")}<h4>Listed by</h4><div class="cd row" data-g="agent:${l.ag}"><div class="av">${g.n[0]}</div><span><b>${g.n}</b><small>${g.v?`<b class="vf">✓ Verified</b> · `:""}${g.c} listings</small></span><i>›</i></div><small>Available from 1 December</small><h4>Location</h4><div class="mpb"></div><div class="b2" data-g="cross:${s?"Store":"Live"}">${s?"Also looking for a place to live?":"Also need storage for the move?"}</div><small class="rp" data-g="report:${l.id}">⚑ Report this listing</small><h4>Similar places</h4><div class="rl">${L.filter(x=>x.k==l.k&&x.id!=l.id).map(x=>card(x,"sm")).join("")||"<small>No similar listings yet</small>"}</div><div style="height:12px"></div></div></div><div class="bt in"><span><b>${l.p}</b></span><div class="bn" data-d="contact:${l.id}">Contact</div></div>`};
+V.gallery=()=>{const i=+P.i||0,l=find();return sb+hd(`${i+1} / 6`)+`<div class="ct pd"><div style="height:400px;border-radius:14px;background:${gr(l.g+i)}"></div><div class="row" style="justify-content:space-between;margin-top:12px"><span class="ch" data-d="gp:-1">‹ Prev</span><span class="ch" data-d="gp:1">Next ›</span></div></div>`};
+V.agent=()=>{const g=AG[P.ag]||AG[0],ls=L.filter(l=>l.ag==(P.ag||0));return sb+hd("Agent / landlord")+`<div class="ct pd"><div class="row"><div class="av" style="width:56px;height:56px;font-size:20px">${g.n[0]}</div><span><h3>${g.n}</h3><small>${g.v?`<b class="vf">✓ Verified</b>`:"Not yet verified"} · ${g.c} active listings</small></span></div><div class="wn">Contact details are shared only through the Contact button on a listing.</div><h4>Active listings</h4>${ls.map(l=>card(l)).join("")}</div>`};
+V.contact=()=>{const l=find();return sb+hd("Contact "+AG[l.ag].n)+`<div class="ct pd"><small>${l.t} · ${l.a}</small><div class="wn"><b>Before you contact</b><br>Never pay a deposit before viewing. Space doesn’t take payments between you and the agent — viewing, agreement and payment all happen directly with them.</div>${[["☎","Call"],["💬","WhatsApp"],["✉","Email"],["🗨","Chat in Space (optional)"]].map((c,i)=>`<div class="cd row" data-d="lead:${i}"><b>${c[0]}</b><span><b>${c[1]}</b><small>Details appear when you tap</small></span><i>›</i></div>`).join("")}</div>`};
+V.report=()=>sb+hd("Report listing")+`<div class="ct pd"><p class="mu">Tell us what’s wrong. Our team reviews every report.</p>${["Looks like a scam","Price seems too good to be true","Photos aren’t of this place","Already let or sold","Something else"].map(r=>`<div class="cd" data-d="cx">${r}</div>`).join("")}</div><div class="bt"><div class="bn" data-d="rep">Submit report</div></div>`;
+V.cross=()=>{const a=P.from=="Live";return sb+hd("",1)+`<div class="ct pd"><div class="ill"></div><h2>${a?"Also need storage for the move?":"Also looking for a place to live?"}</h2><p class="mu">${a?"Browse storage and warehouse space nearby.":"Browse homes to rent or buy in the same area."}</p></div><div class="bt" style="flex-direction:column;align-items:stretch"><div class="bn" data-d="xs:${P.from}">${a?"Browse storage":"Browse homes"}</div><div class="b2" data-d="bk">Not now</div></div>`};
+V.inbox=()=>sb+hd("Messages",0)+`<div class="ct pd">${CS.map(c=>{const l=L.find(x=>x.id==c.l);return`<div class="cd row" data-g="chat:${c.l}"><div class="av">${AG[l.ag].n[0]}</div><span><b>${AG[l.ag].n}</b><small>${l.t} · ${c.m[0][1]}</small></span></div>`}).join("")}<small>Chat is optional — most people use Call or WhatsApp.</small></div>`+bar("inbox");
+V.chat=()=>{const l=find(),c=CS.find(x=>x.l==l.id)||CS[0],o=S.own;return sb+hd(o?c.s:AG[l.ag].n)+`<small class="pd">Re: ${l.t}, ${l.a}</small><div class="ct pd" style="padding-top:10px">${bub(c,o)}</div><div class="bt"><div class="f" style="flex:1;margin:0"><input placeholder="Message…"></div><div class="bn sm" style="margin:0" data-d="toast:Sent">Send</div></div>`};
+V.wish=()=>sb+hd("Wishlists",0)+`<div class="ct pd">${S.guest?`<div class="wn">Sign in to save listings into wishlists.</div><div class="bn" data-g="signup">Sign in or sign up</div>`:Object.entries(S.W).map(([n,ids])=>`<h4>${n} · ${ids.length}</h4>${ids.map(id=>card(L.find(l=>l.id==id))).join("")}`).join("")}</div>`+bar("wish");
+V.dash=()=>sb+hd("Your listings",0)+`<div class="ct pd"><small>Leads by channel: ☎ call · 💬 WhatsApp · ✉ email · 🗨 chat</small><div style="height:8px"></div>${[1,3,4,5].map(id=>{const l=L.find(x=>x.id==id),d=LD[id]||[0,0,0,0];return`<div class="cd"><div class="row"><span><b>${l.t}</b></span><span class="bd" style="flex:none">${l.k=="Store"?"Store":"Live"}</span></div><small>${l.a} · ${l.p} · Active</small><p style="margin:6px 0">☎ ${d[0]} · 💬 ${d[1]} · ✉ ${d[2]} · 🗨 ${d[3]}</p><div class="b2 sm" data-g="feature:${id}">Feature this listing</div></div>`}).join("")}<div style="height:60px"></div></div><div class="fab" data-g="addCat">+</div>`+bar("dash");
+V.addCat=()=>sb+hd("New listing")+`<div class="ct pd"><p class="mu">Pick a category — it decides which fields come next.</p><div class="cd" data-g="addLive"><b>Live</b><small>Property to rent or sell</small></div><div class="cd" data-g="addStore"><b>Store</b><small>Storage unit or warehouse to rent</small></div></div>`;
+const ct=()=>fld("Contact name","e.g. Priya Naidoo")+fld("Phone","+27 82 000 0000")+fld("WhatsApp number","+27 82 000 0000")+fld("Email (optional)","agent@example.com");
+V.addLive=()=>sb+hd("New Live listing")+`<div class="ct pd">${fld("Title","e.g. 3 Bed Townhouse")}${ch("To let","cx",1)+ch("For sale")+ch("House")+ch("Flat")+ch("Townhouse")}${fld("Bedrooms · bathrooms","3 · 2")}${fld("Area","Fourways")}${fld("Price","R18,500/mo")}${fld("Available from","1 December")}<h4>Features</h4>${["Pet friendly","Garden","Pool","Solar"].map(c=>ch(c)).join("")}<h4>Contact details</h4>${ct()}<div class="ill" style="height:70px;margin:6px 0 0"></div></div><div class="bt"><div class="bn" data-d="pub">Publish listing</div></div>`;
+V.addStore=()=>sb+hd("New Store listing")+`<div class="ct pd">${fld("Title","e.g. Self-Storage Unit")}${ch("Self-storage","cx",1)+ch("Warehouse")+ch("Container")}${fld("Size (m²)","12")}${ch("24/7 access","cx",1)+ch("Business hours")}${fld("Area","Midrand")}${fld("Price","R980/mo or R45/m²")}${fld("Available from","1 December")}<h4>Features</h4>${["CCTV","Loading bay","Insured","Drive-up"].map(c=>ch(c)).join("")}<h4>Contact details</h4>${ct()}</div><div class="bt"><div class="bn" data-d="pub">Publish listing</div></div>`;
+V.oInbox=()=>sb+hd("Inbox",0)+`<div class="ct pd">${CS.map(c=>`<div class="cd row" data-g="chat:${c.l}"><div class="av">${c.s[0]}</div><span><b>${c.s}</b><small>${L.find(x=>x.id==c.l).t} · ${c.m[0][1]}</small></span></div>`).join("")}</div>`+bar("oInbox");
+V.billing=()=>sb+hd("Billing & subscription",0)+`<div class="ct pd"><div class="cd pr1"><small>CURRENT PLAN</small><h3>Pro · R1,499/mo</h3><small>Up to 50 listings · priority placement</small></div><h4>Other plans</h4><div class="cd row"><span><b>Starter</b><small>Up to 10 listings</small></span><b>R499/mo</b></div><div class="cd row"><span><b>Agency</b><small>Unlimited · top placement</small></span><b>R3,999/mo</b></div><small>You pay Space for plans and featured listings. Seekers never pay anything in the app.</small></div>`+bar("billing");
+V.feature=()=>{const l=find();return sb+hd("Feature this listing")+`<div class="ct pd"><p class="mu">${l.t}, ${l.a}</p><div class="cd row"><span><b>Featured placement</b><small>2 weeks · top of results</small></span><b>R299</b></div></div><div class="bt"><div class="bn" data-d="feat">Confirm & pay Space</div></div>`};
+V.account=()=>sb+hd("Account",0)+`<div class="ct pd">${S.guest?`<p class="mu">You’re browsing as a guest.</p><div class="bn" data-g="signup">Sign up</div><div class="b2" data-g="login">Log in</div>`:`<div class="row"><div class="av">A</div><b>Alex Mokoena</b></div>`}<div class="li" data-g="notif">Notification preferences<i>›</i></div><div class="li" data-g="help">Help & support<i>›</i></div><div class="li">Privacy & data (POPIA)<i>›</i></div><div class="li" data-d="own">${S.own?"Switch to exploring":"List your space"}<i>›</i></div>${S.guest?"":`<div class="b2" data-d="out">Log out</div>`}</div>`+bar("account");
+V.notif=()=>sb+hd("Notifications")+`<div class="ct pd">${["New chat messages","Price drops on wishlisted listings","New listings matching a saved search","Product updates"].map((t,i)=>`<div class="li"><span>${t}</span><div class="tg${S.N[i]?" on":""}" data-d="tg:${i}"></div></div>`).join("")}</div>`;
+V.help=()=>sb+hd("Help & support")+`<div class="ct pd">${["How do I contact an agent or landlord?","How do featured listings work?","Is it safe to pay a deposit?","How do I delete my account?"].map(q=>`<div class="li">${q}<i>›</i></div>`).join("")}<div class="b2">Contact support</div></div>`;
+
+const T=m=>{const e=document.createElement("div");e.className="ts";e.textContent=m;$("#sc").appendChild(e);setTimeout(()=>e.remove(),2000)};
+const R=()=>{const id=st[st.length-1];$("#sc").innerHTML=V[id]();const i=N.findIndex(x=>x[1]==id);$("#cr").innerHTML=`Screen <b>${i+1}</b> / ${N.length} — <b>${N[i][2]}</b>`;document.querySelectorAll(".it").forEach(e=>e.classList.toggle("on",e.dataset.j==id));$("#jm").value=id};
+const go=(id,p)=>{P=p||{};st.push(id);R()},rs=(id,p)=>{P=p||{};st=[id];R()},bk=()=>{if(st.length>1)st.pop();R()};
+const OW=["dash","addCat","addLive","addStore","oInbox","billing","feature"];
+const jump=id=>{if(OW.includes(id))S.own=true;else if(["home","wish","inbox"].includes(id))S.own=false;rs(id)};
+const need=a=>{S.pend=a;go("signup")};
+const A=(a,v,el)=>{
+if(a=="bk")return bk();if(a=="rs")return rs(v);
+if(a=="cx"){el.classList.toggle("on");return}
+if(a=="tab"){S.tab=v;S.ty="";return R()}
+if(a=="ty"){S.ty=S.ty==v?"":v;return R()}
+if(a=="fav"){if(S.guest)return need(["fav",v]);const w=S.W.Shortlist,i=w.indexOf(+v),on=i<0;on?w.push(+v):w.splice(i,1);R();return T(on?"Saved to Shortlist":"Removed from Shortlist")}
+if(a=="contact"){if(S.guest)return need(["contact",v]);return go("contact",{id:v})}
+if(a=="lead"){const d=LD[P.id]=LD[P.id]||[0,0,0,0];d[v]++;if(v==3)return go("chat",{id:P.id});return T(["Lead logged · opening dialler","Lead logged · opening wa.me/27821234567","Lead logged · opening email"][v])}
+if(a=="verify"){S.guest=false;st=st.filter(x=>!["signup","login","otp"].includes(x));const p=S.pend;S.pend=null;if(!p||!st.length)return rs("home");R();return A(...p)}
+if(a=="own"){if(S.own){S.own=false;return rs("home")}if(S.guest)return need(["own"]);if(!S.acct)return go("acct");S.own=true;return rs("dash")}
+if(a=="acct"){S.acct=1;S.own=true;return rs("dash")}
+if(a=="out"){S.guest=true;S.own=false;return rs("splash")}
+if(a=="pub"){rs("dash");return T("Listing published")}
+if(a=="feat"){rs("dash");return T("Listing featured for 2 weeks")}
+if(a=="rep"){bk();return T("Report sent — thank you")}
+if(a=="xs"){S.tab=v=="Live"?"Store":"Rent";return rs(v=="Live"?"resStore":"resLive")}
+if(a=="gp"){P.i=((+P.i||0)+ +v+6)%6;return R()}
+if(a=="tg"){S.N[v]=S.N[v]?0:1;return R()}
+if(a=="toast")return T(v)};
+$("#sc").onclick=e=>{const d=e.target.closest("[data-d]");if(d){const[a,v]=d.dataset.d.split(":");return A(a,v,d)}const g=e.target.closest("[data-g]");if(g){const[x,v]=g.dataset.g.split(":");go(x,{id:v,ag:v,s:v,from:v})}};
+$("#nv").innerHTML=`<h1>SPACE</h1><i>Find your space.</i>`+GR.map(([g,s])=>`<h5>${g.toUpperCase()}</h5>`+s.split(",").map(x=>{const id=x.split(":")[0];return`<div class="it" data-j="${id}"><u>${N.findIndex(n=>n[1]==id)+1}</u>${N.find(n=>n[1]==id)[2]}</div>`}).join("")).join("");
+$("#jm").innerHTML=N.map(n=>`<option value="${n[1]}">${N.indexOf(n)+1}. ${n[2]}</option>`).join("");
+$("#nv").onclick=e=>{const j=e.target.closest("[data-j]");if(j)jump(j.dataset.j)};$("#jm").onchange=e=>jump(e.target.value);
+R();
+</script></body></html>

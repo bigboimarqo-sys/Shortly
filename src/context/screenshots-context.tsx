@@ -13,6 +13,7 @@ import React, {
 import { Platform } from 'react-native';
 
 import { EntitlementService, FREE_SCREENSHOT_LIMIT } from '@/services/entitlement-service';
+import { OcrService } from '@/services/ocr-service';
 
 export const SCREENSHOTS_STORAGE_KEY = '@shotly_imported_screenshots';
 export const COLLECTIONS_STORAGE_KEY = '@shotly_custom_collections';
@@ -273,95 +274,12 @@ const ROTATING_CATEGORIES: ScreenshotCategory[] = [
   'Maps',
 ];
 
-export function inferCategoryFromFilename(filename: string, index = 0): ScreenshotCategory {
-  const lower = filename.toLowerCase();
-  if (
-    lower.includes('receipt') ||
-    lower.includes('invoice') ||
-    lower.includes('bill') ||
-    lower.includes('tax') ||
-    lower.includes('pay') ||
-    lower.includes('uber') ||
-    lower.includes('order') ||
-    lower.includes('woolworths') ||
-    lower.includes('checkers') ||
-    lower.includes('bank')
-  ) {
-    return 'Receipts';
-  }
-  if (
-    lower.includes('recipe') ||
-    lower.includes('food') ||
-    lower.includes('cook') ||
-    lower.includes('salad') ||
-    lower.includes('pasta') ||
-    lower.includes('cake') ||
-    lower.includes('dinner') ||
-    lower.includes('bake')
-  ) {
-    return 'Recipes';
-  }
-  if (
-    lower.includes('work') ||
-    lower.includes('report') ||
-    lower.includes('slack') ||
-    lower.includes('doc') ||
-    lower.includes('figma') ||
-    lower.includes('code') ||
-    lower.includes('metric') ||
-    lower.includes('dashboard') ||
-    lower.includes('jira') ||
-    lower.includes('email')
-  ) {
-    return 'Work';
-  }
-  if (
-    lower.includes('chat') ||
-    lower.includes('whatsapp') ||
-    lower.includes('message') ||
-    lower.includes('dm') ||
-    lower.includes('convo') ||
-    lower.includes('telegram')
-  ) {
-    return 'Chats';
-  }
-  if (
-    lower.includes('ticket') ||
-    lower.includes('flight') ||
-    lower.includes('boarding') ||
-    lower.includes('safair') ||
-    lower.includes('cinema') ||
-    lower.includes('concert') ||
-    lower.includes('event')
-  ) {
-    return 'Tickets';
-  }
-  if (
-    lower.includes('map') ||
-    lower.includes('route') ||
-    lower.includes('location') ||
-    lower.includes('pin') ||
-    lower.includes('directions') ||
-    lower.includes('waze')
-  ) {
-    return 'Maps';
-  }
-  if (lower.includes('meme') || lower.includes('funny') || lower.includes('lol')) {
-    return 'Memes';
-  }
-  if (lower.includes('fashion') || lower.includes('clothes') || lower.includes('zara') || lower.includes('shoes')) {
-    return 'Fashion';
-  }
-  if (lower.includes('finance') || lower.includes('crypto') || lower.includes('stock') || lower.includes('invest')) {
-    return 'Finance';
-  }
-  if (lower.includes('travel') || lower.includes('hotel') || lower.includes('airbnb') || lower.includes('trip')) {
-    return 'Travel';
-  }
-
-  // When photos from phone have generic filenames like Screenshot_2026...,
-  // smartly assign to one of the main categories so they are immediately categorized!
-  return ROTATING_CATEGORIES[index % ROTATING_CATEGORIES.length];
+export function inferCategoryFromFilename(
+  filename: string,
+  index = 0,
+  ocrText: string = ''
+): ScreenshotCategory {
+  return OcrService.categorize(filename, ocrText, index);
 }
 
 interface ScreenshotsContextType {
@@ -485,34 +403,50 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       }
 
       if (assets.length > 0) {
-        const deviceScreenshots: ScreenshotItem[] = assets.map((a, idx) => {
-          const filename = a.filename || 'Screenshot.png';
-          const category = inferCategoryFromFilename(filename, idx);
-          return {
-            id: a.id || a.uri,
-            uri: a.uri,
-            filename,
-            category,
-            ocrText: `Screenshot taken on ${new Date(
-              a.creationTime || Date.now()
-            ).toLocaleDateString()} ${filename} ${category} on-device search index`,
-            tags: ['screenshot', category.toLowerCase(), 'gallery'],
-            creationTime: a.creationTime || Date.now() - idx * 1000,
-            width: a.width,
-            height: a.height,
-            needsReview: false,
-            assetId: a.id,
-          };
-        });
+        const stored = await AsyncStorage.getItem(SCREENSHOTS_STORAGE_KEY);
+        const existingList: ScreenshotItem[] = stored ? JSON.parse(stored) : [];
+        const existingUris = new Set(existingList.map((p) => p.uri));
+        const newAssets = assets.filter((a) => !existingUris.has(a.uri)).slice(0, 30);
 
-        setScreenshots((prev) => {
-          const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
-          const existingUris = new Set(prev.map((p) => p.uri));
-          const uniqueNew = deviceScreenshots.filter((d) => !existingUris.has(d.uri));
-          const merged = [...uniqueNew, ...prev].slice(0, maxAllowed);
-          AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(merged));
-          return merged;
-        });
+        if (newAssets.length > 0) {
+          const deviceScreenshots: ScreenshotItem[] = await Promise.all(
+            newAssets.map(async (a, idx) => {
+              const filename = a.filename || 'Screenshot.png';
+              const realOcr = await OcrService.extractText(a.uri);
+              const ocrText =
+                realOcr ||
+                `Screenshot taken on ${new Date(
+                  a.creationTime || Date.now()
+                ).toLocaleDateString()} ${filename}`;
+              const category = OcrService.categorize(filename, realOcr, idx);
+              const tags = OcrService.extractTags(ocrText, category);
+
+              return {
+                id: a.id || a.uri,
+                uri: a.uri,
+                filename,
+                category,
+                ocrText,
+                tags,
+                creationTime: a.creationTime || Date.now() - idx * 1000,
+                width: a.width,
+                height: a.height,
+                needsReview: false,
+                assetId: a.id,
+              };
+            })
+          );
+
+          setScreenshots((prev) => {
+            const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
+            const currentUris = new Set(prev.map((p) => p.uri));
+            const uniqueNew = deviceScreenshots.filter((d) => !currentUris.has(d.uri));
+            if (uniqueNew.length === 0) return prev;
+            const merged = [...uniqueNew, ...prev].slice(0, maxAllowed);
+            AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(merged));
+            return merged;
+          });
+        }
       }
     } catch (e) {
       // safely ignore
@@ -540,25 +474,34 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
-          const newlyImported: ScreenshotItem[] = result.assets.map((asset, idx) => {
-            const rawName =
-              asset.fileName ||
-              asset.uri.split('/').pop() ||
-              `Screenshot_${Date.now()}_${idx}.png`;
-            const category = inferCategoryFromFilename(rawName, idx);
-            return {
-              id: `phone-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
-              uri: asset.uri,
-              filename: rawName,
-              category,
-              ocrText: `Imported screenshot ${rawName} category ${category} on-device searchable words and details`,
-              tags: ['screenshot', category.toLowerCase(), 'phone', 'imported'],
-              creationTime: Date.now() - idx * 1000,
-              width: asset.width,
-              height: asset.height,
-              needsReview: true,
-            };
-          });
+          const newlyImported: ScreenshotItem[] = await Promise.all(
+            result.assets.map(async (asset, idx) => {
+              const rawName =
+                asset.fileName ||
+                asset.uri.split('/').pop() ||
+                `Screenshot_${Date.now()}_${idx}.png`;
+
+              const realOcr = await OcrService.extractText(asset.uri);
+              const ocrText =
+                realOcr ||
+                `Screenshot taken on ${new Date().toLocaleDateString()} ${rawName}`;
+              const category = OcrService.categorize(rawName, realOcr, idx);
+              const tags = OcrService.extractTags(ocrText, category);
+
+              return {
+                id: `phone-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+                uri: asset.uri,
+                filename: rawName,
+                category,
+                ocrText,
+                tags,
+                creationTime: Date.now() - idx * 1000,
+                width: asset.width,
+                height: asset.height,
+                needsReview: true,
+              };
+            })
+          );
 
           setScreenshots((prev) => {
             const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
@@ -614,25 +557,33 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             }
 
             if (assets.length > 0) {
-              const newlyImported: ScreenshotItem[] = assets.map((a, idx) => {
-                const filename = a.filename || `Screenshot_${Date.now()}_${idx}.png`;
-                const category = inferCategoryFromFilename(filename, idx);
-                return {
-                  id: a.id || `sc-${Date.now()}-${idx}`,
-                  uri: a.uri,
-                  filename,
-                  category,
-                  ocrText: `Screenshot taken on ${new Date(
-                    a.creationTime || Date.now()
-                  ).toLocaleDateString()} ${filename} ${category} on-device search index`,
-                  tags: ['screenshot', category.toLowerCase(), 'gallery'],
-                  creationTime: a.creationTime || Date.now() - idx * 1000,
-                  width: a.width,
-                  height: a.height,
-                  needsReview: false,
-                  assetId: a.id,
-                };
-              });
+              const newlyImported: ScreenshotItem[] = await Promise.all(
+                assets.map(async (a, idx) => {
+                  const filename = a.filename || `Screenshot_${Date.now()}_${idx}.png`;
+                  const realOcr = await OcrService.extractText(a.uri);
+                  const ocrText =
+                    realOcr ||
+                    `Screenshot taken on ${new Date(
+                      a.creationTime || Date.now()
+                    ).toLocaleDateString()} ${filename}`;
+                  const category = OcrService.categorize(filename, realOcr, idx);
+                  const tags = OcrService.extractTags(ocrText, category);
+
+                  return {
+                    id: a.id || `sc-${Date.now()}-${idx}`,
+                    uri: a.uri,
+                    filename,
+                    category,
+                    ocrText,
+                    tags,
+                    creationTime: a.creationTime || Date.now() - idx * 1000,
+                    width: a.width,
+                    height: a.height,
+                    needsReview: false,
+                    assetId: a.id,
+                  };
+                })
+              );
 
               setScreenshots((prev) => {
                 const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
