@@ -62,7 +62,10 @@
           "organization": "avenueco"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
