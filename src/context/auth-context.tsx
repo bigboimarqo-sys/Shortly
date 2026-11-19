@@ -11,6 +11,7 @@ import { RevenueCatService } from '@/services/revenuecat-service';
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH_STORAGE_KEY = '@shotly_auth_session';
+export const GUEST_STORAGE_KEY = '@shotly_is_guest_mode';
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +19,13 @@ interface AuthContextType {
   userType: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
+  continueAsGuest: () => Promise<void>;
+  authModalVisible: boolean;
+  authModalAction: string | null;
+  promptAuth: (actionName?: string) => void;
+  closeAuthModal: () => void;
+  requireAuth: (actionName?: string) => boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null; user: User | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; user: User | null }>;
   signInWithOAuth: (provider: 'google' | 'apple') => Promise<{ error: Error | null; user: User | null }>;
@@ -109,7 +117,36 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [authModalAction, setAuthModalAction] = useState<string | null>(null);
+
+  const continueAsGuest = async () => {
+    setIsGuest(true);
+    try {
+      await AsyncStorage.setItem(GUEST_STORAGE_KEY, 'true');
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const promptAuth = (actionName?: string) => {
+    setAuthModalAction(actionName || null);
+    setAuthModalVisible(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalVisible(false);
+  };
+
+  const requireAuth = (actionName?: string): boolean => {
+    if (!!session && !!user) {
+      return true;
+    }
+    promptAuth(actionName);
+    return false;
+  };
 
   // Sync auth state with AsyncStorage and Supabase
   const syncStorage = async (currentSession: Session | null) => {
@@ -132,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data?.session) {
           setSession(data.session);
           setUser(data.session.user);
+          setIsGuest(false);
           await syncStorage(data.session);
         } else {
           // Fallback check in storage
@@ -140,6 +178,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsedSession: Session = JSON.parse(stored);
             setSession(parsedSession);
             setUser(parsedSession.user);
+            setIsGuest(false);
+          } else {
+            const guestStored = await AsyncStorage.getItem(GUEST_STORAGE_KEY);
+            if (guestStored === 'true') {
+              setIsGuest(true);
+            }
           }
         }
       } catch (err) {
@@ -381,6 +425,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await RevenueCatService.logOut();
       setUser(null);
       setSession(null);
+      setIsGuest(false);
+      await AsyncStorage.removeItem(GUEST_STORAGE_KEY);
       await syncStorage(null);
     } catch (err) {
       console.warn('Error signing out:', err);
@@ -400,6 +446,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userType,
         isLoading,
         isAuthenticated,
+        isGuest,
+        continueAsGuest,
+        authModalVisible,
+        authModalAction,
+        promptAuth,
+        closeAuthModal,
+        requireAuth,
         signUp,
         signIn,
         signInWithOAuth,

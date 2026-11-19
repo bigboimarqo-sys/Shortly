@@ -30,6 +30,7 @@ import { CleanUpModal } from '@/components/clean-up-modal';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import { useSubscription } from '@/context/subscription-context';
 import { AIService } from '@/services/ai-service';
 import {
@@ -87,6 +88,7 @@ export function MainHomeView({
     remainingFreeDays,
     freeScreenshotLimit,
   } = useSubscription();
+  const { requireAuth } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCollection, setActiveCollection] = useState<string>('All');
@@ -195,7 +197,10 @@ export function MainHomeView({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Open 24/7 Live AI Support with Marcus"
-                onPress={() => setShowAiSupport(true)}
+                onPress={() => {
+                  if (!requireAuth('chat with Marcus AI')) return;
+                  setShowAiSupport(true);
+                }}
                 style={({ pressed }) => [
                   styles.aiSupportHeaderBtn,
                   pressed && { opacity: 0.8 },
@@ -210,6 +215,7 @@ export function MainHomeView({
                 accessibilityRole="button"
                 accessibilityLabel="Import photos from phone"
                 onPress={() => {
+                  if (!requireAuth('import screenshots')) return;
                   pickScreenshotsFromPhone();
                 }}
                 style={({ pressed }) => [
@@ -392,6 +398,7 @@ export function MainHomeView({
                   <Text style={styles.sectionTitle}>Recent</Text>
                   <Pressable
                     onPress={() => {
+                      if (!requireAuth('import screenshots')) return;
                       pickScreenshotsFromPhone();
                     }}
                     style={({ pressed }) => [styles.pickMoreButton, pressed && { opacity: 0.7 }]}>
@@ -414,6 +421,7 @@ export function MainHomeView({
                           if (item) {
                             setSelectedScreenshot(item);
                           } else {
+                            if (!requireAuth('import screenshots')) return;
                             pickScreenshotsFromPhone();
                           }
                         }}
@@ -463,7 +471,10 @@ export function MainHomeView({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Needs review section"
-                onPress={() => setShowCleanUpModal(true)}
+                onPress={() => {
+                  if (!requireAuth('review and clean up screenshots')) return;
+                  setShowCleanUpModal(true);
+                }}
                 style={({ pressed }) => [
                   styles.reviewCard,
                   pressed && styles.cardPressed,
@@ -533,7 +544,11 @@ export function MainHomeView({
                 </ScrollView>
 
                 {/* Plan limit notice: Tapping opens PaywallModal! */}
-                <Pressable onPress={() => setShowPaywallModal(true)}>
+                <Pressable
+                  onPress={() => {
+                    if (!requireAuth('manage subscriptions and trials')) return;
+                    setShowPaywallModal(true);
+                  }}>
                   <Text style={styles.planLimitText}>
                     {isPlus ? (
                       <>
@@ -574,6 +589,7 @@ export function MainHomeView({
                     <Text style={styles.emptyFeedTitle}>No screenshots in {activeCollection}</Text>
                     <Pressable
                       onPress={() => {
+                        if (!requireAuth('import screenshots')) return;
                         pickScreenshotsFromPhone();
                       }}
                       style={styles.emptyFeedButton}>

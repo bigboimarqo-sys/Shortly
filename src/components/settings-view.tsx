@@ -54,7 +54,7 @@ export function SettingsView({
   onNavigateToPermissions,
   onSignOutComplete,
 }: SettingsViewProps) {
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, isGuest, promptAuth, requireAuth, signOut } = useAuth();
   const { status, resetPermissions } = usePhotoPermissions();
   const { screenshots } = useScreenshots();
   const {
@@ -105,7 +105,10 @@ export function SettingsView({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open 24/7 Live AI Customer Support"
-            onPress={() => setShowAiSupport(true)}
+            onPress={() => {
+              if (!requireAuth('chat with Marcus AI')) return;
+              setShowAiSupport(true);
+            }}
             style={({ pressed }) => [
               styles.aiSupportCard,
               pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
@@ -133,7 +136,10 @@ export function SettingsView({
           {/* Settings Items matching Settings.png */}
           <View style={styles.listContainer}>
             <Pressable
-              onPress={() => setShowPaywall(true)}
+              onPress={() => {
+                if (!requireAuth('manage subscriptions and trials')) return;
+                setShowPaywall(true);
+              }}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>Subscription</Text>
               <View style={styles.rowRightBadge}>
@@ -283,23 +289,37 @@ export function SettingsView({
             </Pressable>
           </View>
 
-          {/* Account Status / Sign Out */}
+          {/* Account Status / Sign Out or Register */}
           <View style={styles.accountCard}>
             <Text style={styles.accountTitle}>Account</Text>
             <Text style={styles.accountEmail}>
-              {user?.email || 'Active Account (7-day trial)'}
+              {isAuthenticated ? (user?.email || 'Active Account (7-day trial)') : 'Browsing as Guest'}
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Sign Out"
-              onPress={handleSignOut}
-              style={({ pressed }) => [
-                styles.smallButton,
-                styles.signOutButton,
-                pressed && { opacity: 0.8 },
-              ]}>
-              <Text style={styles.signOutButtonText}>Sign Out</Text>
-            </Pressable>
+            {isAuthenticated ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sign Out"
+                onPress={handleSignOut}
+                style={({ pressed }) => [
+                  styles.smallButton,
+                  styles.signOutButton,
+                  pressed && { opacity: 0.8 },
+                ]}>
+                <Text style={styles.signOutButtonText}>Sign Out</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Create Account or Sign In"
+                onPress={() => promptAuth('create your account')}
+                style={({ pressed }) => [
+                  styles.smallButton,
+                  styles.signInButton,
+                  pressed && { opacity: 0.8 },
+                ]}>
+                <Text style={styles.signInButtonText}>Create Account / Sign In</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </ScrollView>

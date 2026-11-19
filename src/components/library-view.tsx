@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/empty-state';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import { useSubscription } from '@/context/subscription-context';
 import {
   ScreenshotCategory,
@@ -72,6 +73,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
     remainingFreeDays,
     freeScreenshotLimit,
   } = useSubscription();
+  const { requireAuth } = useAuth();
 
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedScreenshot, setSelectedScreenshot] = useState<ScreenshotItem | null>(null);
@@ -80,6 +82,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
 
   const handleAutoImport = async () => {
+    if (!requireAuth('import screenshots')) return;
     if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
       setShowImportModal(false);
       setShowPaywall(true);
@@ -105,6 +108,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
   };
 
   const handlePickFromPhotos = async () => {
+    if (!requireAuth('import screenshots')) return;
     if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
       setShowImportModal(false);
       setShowPaywall(true);
@@ -177,6 +181,7 @@ export function LibraryView({ onTabChange }: LibraryViewProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Import photos from phone"
                 onPress={() => {
+                  if (!requireAuth('import screenshots')) return;
                   if (!isPlus && (screenshots.length >= freeScreenshotLimit || isFreeModeExpired)) {
                     setShowPaywall(true);
                   } else {

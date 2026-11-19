@@ -28,6 +28,7 @@ import { AIService, SmartAction } from '@/services/ai-service';
 import { shareScreenshotImage } from '@/services/share-service';
 
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import {
   ScreenshotCategory,
   ScreenshotItem,
@@ -79,6 +80,7 @@ export function ScreenshotDetailModal({
     deleteScreenshot,
     customCollections,
   } = useScreenshots();
+  const { requireAuth } = useAuth();
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAddTag, setShowAddTag] = useState(false);
@@ -102,6 +104,7 @@ export function ScreenshotDetailModal({
   }, [screenshot?.ocrText, screenshot?.category, screenshot?.filename]);
 
   const handleSmartAction = async (action: SmartAction) => {
+    if (!requireAuth('use smart OCR actions')) return;
     if (action.actionType === 'open_url') {
       try {
         await Linking.openURL(action.value);
@@ -122,6 +125,7 @@ export function ScreenshotDetailModal({
   };
 
   const handleAskAi = (questionText?: string) => {
+    if (!requireAuth('ask questions with Marcus AI')) return;
     const q = (questionText || aiQuestion).trim();
     if (!q || !screenshot) return;
     const answer = AIService.askScreenshot(
@@ -138,6 +142,7 @@ export function ScreenshotDetailModal({
     CATEGORY_COLORS[screenshot.category] || CATEGORY_COLORS.Other;
 
   const handleShare = async () => {
+    if (!requireAuth('share screenshots')) return;
     if (isSharing) return;
     setIsSharing(true);
     try {
@@ -148,16 +153,19 @@ export function ScreenshotDetailModal({
   };
 
   const handleCopyOcr = () => {
+    if (!requireAuth('copy extracted OCR text')) return;
     setCopiedOcr(true);
     setTimeout(() => setCopiedOcr(false), 2000);
   };
 
   const handleSelectCategory = (cat: ScreenshotCategory) => {
+    if (!requireAuth('change screenshot categories')) return;
     updateScreenshotCategory(screenshot.id, cat);
     setShowCategoryPicker(false);
   };
 
   const handleAddTagSubmit = () => {
+    if (!requireAuth('add custom tags')) return;
     if (tagInput.trim()) {
       addScreenshotTag(screenshot.id, tagInput.trim());
       setTagInput('');
@@ -166,6 +174,7 @@ export function ScreenshotDetailModal({
   };
 
   const handleDelete = () => {
+    if (!requireAuth('delete screenshots')) return;
     Alert.alert(
       'Delete Screenshot',
       `Are you sure you want to delete "${screenshot.filename}" from Shotly?`,
@@ -184,6 +193,7 @@ export function ScreenshotDetailModal({
   };
 
   const handleAddToCollection = (colName: string) => {
+    if (!requireAuth('manage collections')) return;
     addScreenshotTag(screenshot.id, colName.toLowerCase());
     setShowCollectionPicker(false);
   };

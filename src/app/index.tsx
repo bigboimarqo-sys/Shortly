@@ -5,6 +5,7 @@ import {
   View,
 } from 'react-native';
 
+import { AuthRequiredModal } from '@/components/auth-required-modal';
 import { TabName } from '@/components/bottom-tab-bar';
 import { CollectionsView } from '@/components/collections-view';
 import { LibraryView } from '@/components/library-view';
@@ -21,12 +22,25 @@ import { usePhotoPermissions } from '@/hooks/use-photo-permissions';
 type FlowView = 'onboarding' | 'signup' | 'signin' | 'permissions' | 'main';
 
 export default function RootIndexScreen() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    isGuest,
+    continueAsGuest,
+    authModalVisible,
+    authModalAction,
+    closeAuthModal,
+    isLoading: authLoading,
+  } = useAuth();
   const { isGranted, isLoading: permissionsLoading } = usePhotoPermissions();
 
   const [currentView, setCurrentView] = useState<FlowView>('onboarding');
   const [activeTab, setActiveTab] = useState<TabName>('Home');
   const [hasInitialized, setHasInitialized] = useState(false);
+
+  const handleContinueAsGuest = async () => {
+    await continueAsGuest();
+    setCurrentView('main');
+  };
 
   useEffect(() => {
     if (authLoading || permissionsLoading) return;
@@ -38,16 +52,18 @@ export default function RootIndexScreen() {
         } else {
           setCurrentView('main');
         }
+      } else if (isGuest) {
+        // User previously chose to browse as guest
+        setCurrentView('main');
       } else {
-        // Users must register or sign in to start the 7-day trial - no guest mode bypass
         setCurrentView('onboarding');
       }
       setHasInitialized(true);
     } else {
-      // If user logs out, redirect to signin
-      if (!isAuthenticated && (currentView === 'main' || currentView === 'permissions')) {
+      // If user logs out and is not guest, redirect to signin
+      if (!isAuthenticated && !isGuest && (currentView === 'main' || currentView === 'permissions')) {
         setCurrentView('signin');
-      } else if (isAuthenticated && (currentView === 'signin' || currentView === 'signup')) {
+      } else if (isAuthenticated && (currentView === 'signin' || currentView === 'signup' || currentView === 'onboarding')) {
         if (!isGranted) {
           setCurrentView('permissions');
         } else {
@@ -55,7 +71,7 @@ export default function RootIndexScreen() {
         }
       }
     }
-  }, [authLoading, permissionsLoading, isAuthenticated, isGranted, hasInitialized, currentView]);
+  }, [authLoading, permissionsLoading, isAuthenticated, isGuest, isGranted, hasInitialized, currentView]);
 
   useEffect(() => {
     if (isGranted && currentView === 'permissions') {
@@ -78,6 +94,7 @@ export default function RootIndexScreen() {
         <OnboardingCarousel
           onGetStarted={() => setCurrentView('signup')}
           onSignIn={() => setCurrentView('signin')}
+          onContinueAsGuest={handleContinueAsGuest}
         />
       </View>
     );
@@ -97,6 +114,7 @@ export default function RootIndexScreen() {
             }
           }}
           onBack={() => setCurrentView('onboarding')}
+          onContinueAsGuest={handleContinueAsGuest}
         />
       </View>
     );
@@ -116,6 +134,7 @@ export default function RootIndexScreen() {
             }
           }}
           onBack={() => setCurrentView('onboarding')}
+          onContinueAsGuest={handleContinueAsGuest}
         />
       </View>
     );
@@ -183,6 +202,21 @@ export default function RootIndexScreen() {
           onSignOutComplete={() => setCurrentView('signin')}
         />
       )}
+
+      {/* Global Auth-Required Modal when a guest attempts an action */}
+      <AuthRequiredModal
+        visible={authModalVisible}
+        actionName={authModalAction}
+        onClose={closeAuthModal}
+        onSignUp={() => {
+          closeAuthModal();
+          setCurrentView('signup');
+        }}
+        onSignIn={() => {
+          closeAuthModal();
+          setCurrentView('signin');
+        }}
+      />
     </View>
   );
 }

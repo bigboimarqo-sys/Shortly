@@ -17,11 +17,16 @@ import { BrandColors } from '@/constants/theme';
 interface OnboardingCarouselProps {
   onGetStarted: () => void;
   onSignIn?: () => void;
+  onContinueAsGuest?: () => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export function OnboardingCarousel({ onGetStarted, onSignIn }: OnboardingCarouselProps) {
+export function OnboardingCarousel({
+  onGetStarted,
+  onSignIn,
+  onContinueAsGuest,
+}: OnboardingCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<any>(null);
 
@@ -119,6 +124,16 @@ export function OnboardingCarousel({ onGetStarted, onSignIn }: OnboardingCarouse
               <Text style={styles.getStartedButtonText}>Get started</Text>
             </Pressable>
 
+            {onContinueAsGuest && (
+              <Pressable
+                onPress={onContinueAsGuest}
+                style={({ pressed }) => [styles.guestLink, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Continue without an account">
+                <Text style={styles.guestLinkText}>Continue without an account &rarr;</Text>
+              </Pressable>
+            )}
+
             <Text style={styles.privacyNotice}>
               Private by default. Processing happens on your phone.
             </Text>
@@ -170,6 +185,16 @@ export function OnboardingCarousel({ onGetStarted, onSignIn }: OnboardingCarouse
                 <Text style={styles.signInLinkText}>
                   Already have an account? <Text style={styles.signInLinkHighlight}>Sign in</Text>
                 </Text>
+              </Pressable>
+            )}
+
+            {onContinueAsGuest && (
+              <Pressable
+                onPress={onContinueAsGuest}
+                style={({ pressed }) => [styles.guestLink, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Continue without an account">
+                <Text style={styles.guestLinkText}>Continue without an account &rarr;</Text>
               </Pressable>
             )}
           </View>
@@ -342,6 +367,17 @@ const styles = StyleSheet.create({
   signInLinkHighlight: {
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  guestLink: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  guestLinkText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    opacity: 0.95,
   },
   // Dots
   dotsRow: {

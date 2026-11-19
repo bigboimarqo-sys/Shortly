@@ -21,12 +21,14 @@ interface SignUpViewProps {
   onSignInPress: () => void;
   onSuccess?: () => void;
   onBack?: () => void;
+  onContinueAsGuest?: () => void;
 }
 
 export function SignUpView({
   onSignInPress,
   onSuccess,
   onBack,
+  onContinueAsGuest,
 }: SignUpViewProps) {
   const { signUp, signInWithOAuth, isLoading } = useAuth();
   const [email, setEmail] = useState('');
@@ -220,6 +222,16 @@ export function SignUpView({
                 <Text style={styles.linkHighlight}>Sign in</Text>
               </Text>
             </Pressable>
+
+            {onContinueAsGuest && (
+              <Pressable
+                onPress={onContinueAsGuest}
+                style={({ pressed }) => [styles.guestButton, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Continue without an account">
+                <Text style={styles.guestButtonText}>Continue without an account &rarr;</Text>
+              </Pressable>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -381,5 +393,16 @@ const styles = StyleSheet.create({
   linkHighlight: {
     color: BrandColors.primary,
     fontWeight: '700',
+  },
+  guestButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    color: BrandColors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
 });

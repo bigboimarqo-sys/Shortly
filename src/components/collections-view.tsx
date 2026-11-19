@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/empty-state';
 import { PaywallModal } from '@/components/paywall-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import { useSubscription } from '@/context/subscription-context';
 import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
 
@@ -34,6 +35,7 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
     createCustomCollection,
   } = useScreenshots();
   const { isPlus } = useSubscription();
+  const { requireAuth } = useAuth();
 
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [collectionSubFilter, setCollectionSubFilter] = useState<'All' | 'Newest' | 'Tagged'>('All');
@@ -199,7 +201,10 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
                   title="No collections yet"
                   subtitle="Group receipts, recipes, or work screenshots into organized collections."
                   actionLabel="Create Collection"
-                  onAction={() => setShowNewCollectionModal(true)}
+                  onAction={() => {
+                    if (!requireAuth('create custom collections')) return;
+                    setShowNewCollectionModal(true);
+                  }}
                 />
               ) : (
                 collectionsData.map((item) => (
@@ -244,7 +249,11 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
             </View>
 
             {/* Free Plan Limit Notice matching Collections.png */}
-            <Pressable onPress={() => setShowPaywall(true)}>
+            <Pressable
+              onPress={() => {
+                if (!requireAuth('manage subscriptions and trials')) return;
+                setShowPaywall(true);
+              }}>
               <Text style={styles.planNotice}>
                 Free plan: up to 3 Collections{' '}
                 <Text style={styles.planNoticeUpgrade}>Upgrade to Plus</Text>
@@ -255,7 +264,10 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="New Collection"
-              onPress={() => setShowNewCollectionModal(true)}
+              onPress={() => {
+                if (!requireAuth('create custom collections')) return;
+                setShowNewCollectionModal(true);
+              }}
               style={({ pressed }) => [
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
