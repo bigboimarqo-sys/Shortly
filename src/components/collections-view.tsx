@@ -1,8 +1,7 @@
 import { Image } from 'expo-image';
-import { ArrowLeft, Folder, NavArrowRight, Plus, Xmark } from 'iconoir-react-native';
-import React, { useMemo, useState } from 'react';
+import { Folder, NavArrowRight, Xmark } from 'iconoir-react-native';
+import { useMemo, useState } from 'react';
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -10,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
