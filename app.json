@@ -59,7 +59,8 @@
         {
           "url": "https://sentry.io/",
           "project": "react-native",
-          "organization": "avenueco"
+          "organization": "avenueco",
+          "disableAutoUpload": true
         }
       ],
       "expo-sqlite",
