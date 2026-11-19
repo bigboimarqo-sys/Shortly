@@ -10,13 +10,14 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { EntitlementService, FREE_SCREENSHOT_LIMIT } from '@/services/entitlement-service';
 import { OcrService } from '@/services/ocr-service';
 
 export const SCREENSHOTS_STORAGE_KEY = '@shotly_imported_screenshots';
 export const COLLECTIONS_STORAGE_KEY = '@shotly_custom_collections';
+export const AUTO_CAPTURE_STORAGE_KEY = '@shotly_auto_capture_enabled';
 
 export type ScreenshotCategory =
   | 'Receipts'
@@ -43,6 +44,7 @@ export interface ScreenshotItem {
   height?: number;
   needsReview?: boolean;
   assetId?: string;
+  isVault?: boolean;
 }
 
 const isExpoGo =
@@ -261,6 +263,26 @@ const INITIAL_DEMO_SCREENSHOTS: ScreenshotItem[] = [
     creationTime: Date.now() - 3600000 * 40,
     needsReview: false,
   },
+  {
+    id: 'demo-vault-1',
+    uri: createCardSvg(
+      'Finance',
+      'Confidential FNB Statement',
+      '#0F766E',
+      '#F0FDFA',
+      'Account: ****4892 · Bal: R48,250.00',
+      'Salary Deposit: R65,000.00',
+      'CONFIDENTIAL · PRIVATE VAULT',
+      'LOCKED'
+    ),
+    filename: 'FNB_Confidential_Statement.png',
+    category: 'Finance',
+    ocrText: 'First National Bank FNB Private Wealth Statement Account 4892 Confidential Salary Proof of Payment Tax',
+    tags: ['vault', 'private', 'finance', 'bank', 'fnb'],
+    creationTime: Date.now() - 3600000 * 5,
+    needsReview: false,
+    isVault: true,
+  },
 ];
 
 const DEFAULT_CUSTOM_COLLECTIONS = ['Receipts', 'Recipes', 'Work'];
@@ -284,10 +306,14 @@ export function inferCategoryFromFilename(
 
 interface ScreenshotsContextType {
   screenshots: ScreenshotItem[];
+  vaultScreenshots: ScreenshotItem[];
+  allScreenshots: ScreenshotItem[];
   customCollections: string[];
   isLoading: boolean;
   error: string | null;
   needsReviewCount: number;
+  autoCaptureEnabled: boolean;
+  setAutoCaptureEnabled: (enabled: boolean) => Promise<void>;
   pickScreenshotsFromPhone: (customLimit?: number) => Promise<ScreenshotItem[] | undefined>;
   importAllDeviceScreenshots: () => Promise<number>;
   refreshScreenshots: () => Promise<void>;
@@ -301,14 +327,21 @@ interface ScreenshotsContextType {
   ) => Promise<{ success: boolean; deletedFromDevice: boolean }>;
   createCustomCollection: (name: string) => Promise<boolean>;
   markAsReviewed: (id: string) => Promise<void>;
+  moveToVault: (id: string) => Promise<void>;
+  removeFromVault: (id: string) => Promise<void>;
+  addScreenshotsToCollection: (ids: string[], collectionName: string) => Promise<void>;
 }
 
 const ScreenshotsContext = createContext<ScreenshotsContextType>({
-  screenshots: INITIAL_DEMO_SCREENSHOTS,
+  screenshots: INITIAL_DEMO_SCREENSHOTS.filter((s) => !s.isVault),
+  vaultScreenshots: INITIAL_DEMO_SCREENSHOTS.filter((s) => !!s.isVault),
+  allScreenshots: INITIAL_DEMO_SCREENSHOTS,
   customCollections: DEFAULT_CUSTOM_COLLECTIONS,
   isLoading: false,
   error: null,
   needsReviewCount: 2,
+  autoCaptureEnabled: true,
+  setAutoCaptureEnabled: async () => {},
   pickScreenshotsFromPhone: async () => undefined,
   importAllDeviceScreenshots: async () => 0,
   refreshScreenshots: async () => {},
@@ -319,13 +352,28 @@ const ScreenshotsContext = createContext<ScreenshotsContextType>({
   deleteScreenshot: async () => ({ success: true, deletedFromDevice: false }),
   createCustomCollection: async () => true,
   markAsReviewed: async () => {},
+  moveToVault: async () => {},
+  removeFromVault: async () => {},
+  addScreenshotsToCollection: async () => {},
 });
 
 export function ScreenshotsProvider({ children }: { children: React.ReactNode }) {
-  const [screenshots, setScreenshots] = useState<ScreenshotItem[]>(INITIAL_DEMO_SCREENSHOTS);
+  const [allScreenshots, setAllScreenshots] = useState<ScreenshotItem[]>(INITIAL_DEMO_SCREENSHOTS);
   const [customCollections, setCustomCollections] = useState<string[]>(DEFAULT_CUSTOM_COLLECTIONS);
+  const [autoCaptureEnabled, setAutoCaptureEnabledState] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Isolated views: public feed excludes vault items
+  const publicScreenshots = useMemo(
+    () => allScreenshots.filter((s) => !s.isVault),
+    [allScreenshots]
+  );
+
+  const vaultScreenshots = useMemo(
+    () => allScreenshots.filter((s) => !!s.isVault),
+    [allScreenshots]
+  );
 
   // 1. Load stored screenshots & collections on mount
   const loadStoredScreenshots = useCallback(async () => {
@@ -334,7 +382,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       if (stored) {
         const parsed: ScreenshotItem[] = JSON.parse(stored);
         if (parsed.length > 0) {
-          setScreenshots(parsed);
+          setAllScreenshots(parsed);
           return parsed;
         }
       }
@@ -343,11 +391,11 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         SCREENSHOTS_STORAGE_KEY,
         JSON.stringify(INITIAL_DEMO_SCREENSHOTS)
       );
-      setScreenshots(INITIAL_DEMO_SCREENSHOTS);
+      setAllScreenshots(INITIAL_DEMO_SCREENSHOTS);
       return INITIAL_DEMO_SCREENSHOTS;
     } catch (err) {
       console.warn('Error loading stored screenshots:', err);
-      setScreenshots(INITIAL_DEMO_SCREENSHOTS);
+      setAllScreenshots(INITIAL_DEMO_SCREENSHOTS);
       return INITIAL_DEMO_SCREENSHOTS;
     }
   }, []);
@@ -437,7 +485,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             })
           );
 
-          setScreenshots((prev) => {
+          setAllScreenshots((prev) => {
             const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
             const currentUris = new Set(prev.map((p) => p.uri));
             const uniqueNew = deviceScreenshots.filter((d) => !currentUris.has(d.uri));
@@ -453,12 +501,42 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  // Load auto-capture preference
+  useEffect(() => {
+    AsyncStorage.getItem(AUTO_CAPTURE_STORAGE_KEY).then((val) => {
+      if (val !== null) {
+        setAutoCaptureEnabledState(val === 'true');
+      }
+    });
+  }, []);
+
+  const setAutoCaptureEnabled = useCallback(async (enabled: boolean) => {
+    setAutoCaptureEnabledState(enabled);
+    try {
+      await AsyncStorage.setItem(AUTO_CAPTURE_STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     loadStoredScreenshots().then(() => {
-      scanDeviceGallery();
+      if (autoCaptureEnabled) {
+        scanDeviceGallery();
+      }
     });
     loadStoredCollections();
-  }, [loadStoredScreenshots, scanDeviceGallery, loadStoredCollections]);
+  }, [loadStoredScreenshots, scanDeviceGallery, loadStoredCollections, autoCaptureEnabled]);
+
+  // AppState Foreground Listener: auto-scans new screenshots when app returns to active
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && autoCaptureEnabled) {
+        scanDeviceGallery();
+      }
+    });
+    return () => sub.remove();
+  }, [scanDeviceGallery, autoCaptureEnabled]);
 
   // 3. Native Photo Picker: Lets the user select maximum/unlimited screenshots directly from their phone!
   const pickScreenshotsFromPhone = useCallback(
@@ -503,7 +581,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
             })
           );
 
-          setScreenshots((prev) => {
+          setAllScreenshots((prev) => {
             const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
             const existingUris = new Set(prev.map((p) => p.uri));
             const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
@@ -585,7 +663,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
                 })
               );
 
-              setScreenshots((prev) => {
+              setAllScreenshots((prev) => {
                 const maxAllowed = EntitlementService.isPlusActive() ? 5000 : FREE_SCREENSHOT_LIMIT;
                 const existingUris = new Set(prev.map((p) => p.uri));
                 const uniqueNew = newlyImported.filter((d) => !existingUris.has(d.uri));
@@ -628,7 +706,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
   // 4. Update Screenshot Category (instant re-categorization!)
   const updateScreenshotCategory = useCallback(
     async (id: string, newCategory: ScreenshotCategory) => {
-      setScreenshots((prev) => {
+      setAllScreenshots((prev) => {
         const updated = prev.map((item) =>
           item.id === id ? { ...item, category: newCategory, needsReview: false } : item
         );
@@ -644,7 +722,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     const cleanTag = tag.trim().toLowerCase().replace(/^#/, '');
     if (!cleanTag) return;
 
-    setScreenshots((prev) => {
+    setAllScreenshots((prev) => {
       const updated = prev.map((item) => {
         if (item.id === id) {
           const tags = item.tags.includes(cleanTag) ? item.tags : [...item.tags, cleanTag];
@@ -667,7 +745,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
 
       if (deleteFromDevice && Platform.OS !== 'web') {
         try {
-          const item = screenshots.find((s) => s.id === id);
+          const item = allScreenshots.find((s) => s.id === id);
           const targetAssetId =
             item?.assetId || (item?.id.startsWith('demo-') ? null : item?.id);
           if (targetAssetId) {
@@ -687,7 +765,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         }
       }
 
-      setScreenshots((prev) => {
+      setAllScreenshots((prev) => {
         const updated = prev.filter((item) => item.id !== id);
         AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
         return updated;
@@ -695,7 +773,7 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
 
       return { success: true, deletedFromDevice };
     },
-    [screenshots]
+    [allScreenshots]
   );
 
   // 7. Create custom collection
@@ -717,9 +795,28 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
-  // 8. Mark as reviewed
+  // 8. Add screenshots to collection
+  const addScreenshotsToCollection = useCallback(
+    async (ids: string[], collectionName: string) => {
+      const tag = collectionName.toLowerCase();
+      const idSet = new Set(ids);
+      setAllScreenshots((prev) => {
+        const updated = prev.map((s) => {
+          if (idSet.has(s.id) && !s.tags.includes(tag)) {
+            return { ...s, tags: [...s.tags, tag] };
+          }
+          return s;
+        });
+        AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    []
+  );
+
+  // 9. Mark as reviewed
   const markAsReviewed = useCallback(async (id: string) => {
-    setScreenshots((prev) => {
+    setAllScreenshots((prev) => {
       const updated = prev.map((item) =>
         item.id === id ? { ...item, needsReview: false } : item
       );
@@ -728,13 +825,31 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
-  // 9. Cross-category search across all screenshots
+  // 10. Move to Private Vault
+  const moveToVault = useCallback(async (id: string) => {
+    setAllScreenshots((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, isVault: true } : s));
+      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // 11. Remove from Private Vault
+  const removeFromVault = useCallback(async (id: string) => {
+    setAllScreenshots((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, isVault: false } : s));
+      AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // 12. Cross-category search across public screenshots (Vault strictly isolated)
   const searchScreenshots = useCallback(
     (query: string): ScreenshotItem[] => {
       const q = query.trim().toLowerCase();
-      if (!q) return screenshots;
+      if (!q) return publicScreenshots;
 
-      return screenshots.filter((item) => {
+      return publicScreenshots.filter((item) => {
         const matchCategory = item.category.toLowerCase().includes(q);
         const matchFilename = item.filename.toLowerCase().includes(q);
         const matchOcr = item.ocrText.toLowerCase().includes(q);
@@ -742,11 +857,11 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
         return matchCategory || matchFilename || matchOcr || matchTags;
       });
     },
-    [screenshots]
+    [publicScreenshots]
   );
 
   const addCustomScreenshot = useCallback(async (item: ScreenshotItem) => {
-    setScreenshots((prev) => {
+    setAllScreenshots((prev) => {
       const updated = [item, ...prev];
       AsyncStorage.setItem(SCREENSHOTS_STORAGE_KEY, JSON.stringify(updated));
       return updated;
@@ -754,16 +869,20 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const needsReviewCount = useMemo(() => {
-    return screenshots.filter((s) => s.needsReview).length;
-  }, [screenshots]);
+    return publicScreenshots.filter((s) => s.needsReview).length;
+  }, [publicScreenshots]);
 
   const value = useMemo(
     () => ({
-      screenshots,
+      screenshots: publicScreenshots,
+      vaultScreenshots,
+      allScreenshots,
       customCollections,
       isLoading,
       error,
       needsReviewCount,
+      autoCaptureEnabled,
+      setAutoCaptureEnabled,
       pickScreenshotsFromPhone,
       importAllDeviceScreenshots,
       refreshScreenshots,
@@ -774,13 +893,20 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       deleteScreenshot,
       createCustomCollection,
       markAsReviewed,
+      moveToVault,
+      removeFromVault,
+      addScreenshotsToCollection,
     }),
     [
-      screenshots,
+      publicScreenshots,
+      vaultScreenshots,
+      allScreenshots,
       customCollections,
       isLoading,
       error,
       needsReviewCount,
+      autoCaptureEnabled,
+      setAutoCaptureEnabled,
       pickScreenshotsFromPhone,
       importAllDeviceScreenshots,
       refreshScreenshots,
@@ -791,6 +917,9 @@ export function ScreenshotsProvider({ children }: { children: React.ReactNode })
       deleteScreenshot,
       createCustomCollection,
       markAsReviewed,
+      moveToVault,
+      removeFromVault,
+      addScreenshotsToCollection,
     ]
   );
 

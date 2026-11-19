@@ -15,9 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AISupportModal } from '@/components/ai-support-modal';
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { BrandLogo } from '@/components/brand-logo';
+import { NotificationsModal } from '@/components/notifications-modal';
 import { PaywallModal } from '@/components/paywall-modal';
 import { PrivacyDataSheet } from '@/components/privacy-data-sheet';
 import { PrivacyPolicyModal } from '@/components/privacy-policy-modal';
+import { PrivateVaultModal } from '@/components/private-vault-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { ScreenshotCategory, useScreenshots } from '@/context/screenshots-context';
@@ -56,7 +58,12 @@ export function SettingsView({
 }: SettingsViewProps) {
   const { user, isAuthenticated, isGuest, promptAuth, requireAuth, signOut } = useAuth();
   const { status, resetPermissions } = usePhotoPermissions();
-  const { screenshots } = useScreenshots();
+  const {
+    screenshots,
+    vaultScreenshots,
+    autoCaptureEnabled,
+    setAutoCaptureEnabled,
+  } = useScreenshots();
   const {
     isPlus,
     record,
@@ -67,7 +74,8 @@ export function SettingsView({
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [showAiSupport, setShowAiSupport] = useState(false);
-  const [autoCapture, setAutoCapture] = useState(true);
+  const [showVaultModal, setShowVaultModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [showPrivacyDataSheet, setShowPrivacyDataSheet] = useState(false);
   const [showAppearanceModal, setShowAppearanceModal] = useState(false);
@@ -159,10 +167,24 @@ export function SettingsView({
             </Pressable>
 
             <Pressable
-              onPress={() => setAutoCapture(!autoCapture)}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle auto-capture"
+              onPress={() => setAutoCaptureEnabled(!autoCaptureEnabled)}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>Auto-capture</Text>
-              <Text style={styles.rowValue}>{autoCapture ? 'On' : 'Off'}</Text>
+              <Text style={styles.rowValue}>{autoCaptureEnabled ? 'On' : 'Off'}</Text>
+            </Pressable>
+
+            {/* Private Vault Settings Row */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Private Vault"
+              onPress={() => setShowVaultModal(true)}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
+              <Text style={styles.rowLabel}>Private Vault</Text>
+              <Text style={[styles.rowValue, { color: '#F59E0B', fontWeight: '700' }]}>
+                {vaultScreenshots.length > 0 ? `${vaultScreenshots.length} locked 🔒 →` : 'Locked 🔒 →'}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -172,13 +194,14 @@ export function SettingsView({
               <Text style={styles.rowValue}>10 categories →</Text>
             </Pressable>
 
+            {/* Notifications Preferences Sheet */}
             <Pressable
-              onPress={() =>
-                Alert.alert('Notifications', 'Notification preferences are set to: Screenshot reminders (Weekly).')
-              }
+              accessibilityRole="button"
+              accessibilityLabel="Open Notification preferences"
+              onPress={() => setShowNotificationsModal(true)}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.rowLabel}>Notifications</Text>
-              <Text style={styles.rowValue}>Enabled</Text>
+              <Text style={styles.rowValue}>Weekly →</Text>
             </Pressable>
 
             <Pressable
@@ -349,6 +372,18 @@ export function SettingsView({
       <PrivacyDataSheet
         visible={showPrivacyDataSheet}
         onClose={() => setShowPrivacyDataSheet(false)}
+      />
+
+      {/* Interactive Notifications Modal */}
+      <NotificationsModal
+        visible={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
+
+      {/* Biometric Private Vault Modal */}
+      <PrivateVaultModal
+        visible={showVaultModal}
+        onClose={() => setShowVaultModal(false)}
       />
 
       {/* 10 Smart Categories Modal */}

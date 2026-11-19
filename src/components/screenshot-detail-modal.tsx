@@ -79,6 +79,8 @@ export function ScreenshotDetailModal({
     addScreenshotTag,
     deleteScreenshot,
     customCollections,
+    moveToVault,
+    removeFromVault,
   } = useScreenshots();
   const { requireAuth } = useAuth();
 
@@ -196,6 +198,30 @@ export function ScreenshotDetailModal({
     if (!requireAuth('manage collections')) return;
     addScreenshotTag(screenshot.id, colName.toLowerCase());
     setShowCollectionPicker(false);
+  };
+
+  const handleToggleVault = async () => {
+    if (!requireAuth('use Private Vault')) return;
+    if (screenshot.isVault) {
+      await removeFromVault(screenshot.id);
+      Alert.alert('Unlocked', `"${screenshot.filename}" has been moved back to your Library.`);
+      onClose();
+    } else {
+      Alert.alert(
+        'Move to Private Vault',
+        `Move "${screenshot.filename}" into your secure Private Vault?\n\nIt will be hidden from searches and library feeds until unlocked with biometrics.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Lock in Vault',
+            onPress: async () => {
+              await moveToVault(screenshot.id);
+              onClose();
+            },
+          },
+        ]
+      );
+    }
   };
 
   return (
@@ -486,6 +512,19 @@ export function ScreenshotDetailModal({
                   pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                 ]}>
                 <Text style={styles.secondaryButtonText}>Add to Collection</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={screenshot.isVault ? 'Unlock from Private Vault' : 'Move to Private Vault'}
+                onPress={handleToggleVault}
+                style={({ pressed }) => [
+                  styles.vaultButton,
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                ]}>
+                <Text style={styles.vaultButtonText}>
+                  {screenshot.isVault ? '🔓 Unlock to Library' : '🔒 Move to Private Vault'}
+                </Text>
               </Pressable>
 
               <Pressable
@@ -795,6 +834,20 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: BrandColors.ink,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  vaultButton: {
+    height: 54,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  vaultButtonText: {
+    color: '#F59E0B',
     fontSize: 16,
     fontWeight: '700',
   },

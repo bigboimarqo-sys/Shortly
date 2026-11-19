@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
-import { Folder, NavArrowRight, Xmark } from 'iconoir-react-native';
+import { Check, Folder, Lock, NavArrowRight, Plus, Xmark } from 'iconoir-react-native';
 import { useMemo, useState } from 'react';
 import {
+  Dimensions,
   Modal,
   Platform,
   Pressable,
@@ -9,18 +10,21 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTabBar, TabName } from '@/components/bottom-tab-bar';
 import { EmptyState } from '@/components/empty-state';
 import { PaywallModal } from '@/components/paywall-modal';
+import { PrivateVaultModal } from '@/components/private-vault-modal';
 import { ScreenshotDetailModal } from '@/components/screenshot-detail-modal';
 import { BrandColors, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { useSubscription } from '@/context/subscription-context';
 import { ScreenshotItem, useScreenshots } from '@/hooks/use-screenshots';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface CollectionsViewProps {
   onTabChange?: (tab: TabName) => void;
@@ -30,8 +34,10 @@ interface CollectionsViewProps {
 export function CollectionsView({ onTabChange }: CollectionsViewProps) {
   const {
     screenshots,
+    vaultScreenshots,
     customCollections,
     createCustomCollection,
+    addScreenshotsToCollection,
   } = useScreenshots();
   const { isPlus } = useSubscription();
   const { requireAuth } = useAuth();
@@ -42,6 +48,9 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
   const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showVaultModal, setShowVaultModal] = useState(false);
+  const [showAddScreenshotsModal, setShowAddScreenshotsModal] = useState(false);
+  const [selectedScreenshotsToAdd, setSelectedScreenshotsToAdd] = useState<string[]>([]);
 
   // Group screenshots by collection / category
   const collectionsData = useMemo(() => {
@@ -93,6 +102,19 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
     setShowNewCollectionModal(false);
   };
 
+  const handleToggleSelectToAdd = (id: string) => {
+    setSelectedScreenshotsToAdd((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmAddScreenshots = async () => {
+    if (!selectedCollection || selectedScreenshotsToAdd.length === 0) return;
+    await addScreenshotsToCollection(selectedScreenshotsToAdd, selectedCollection);
+    setSelectedScreenshotsToAdd([]);
+    setShowAddScreenshotsModal(false);
+  };
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       {selectedCollection ? (
@@ -112,7 +134,23 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.detailScrollContent}>
             <View style={styles.mainContainer}>
-              <Text style={styles.detailTitle}>{selectedCollection}</Text>
+              <View style={styles.detailTitleRow}>
+                <Text style={styles.detailTitle}>{selectedCollection}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Add screenshots to this collection"
+                  onPress={() => {
+                    setSelectedScreenshotsToAdd([]);
+                    setShowAddScreenshotsModal(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.addPhotosToColBtn,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}>
+                  <Plus color="#FFFFFF" width={14} height={14} strokeWidth={2.4} />
+                  <Text style={styles.addPhotosToColBtnText}>Add Screenshots</Text>
+                </Pressable>
+              </View>
 
               {/* Sub-filter Pills matching Collection detail.png */}
               <View style={styles.subFilterRow}>
@@ -147,9 +185,12 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
                 <EmptyState
                   emoji="📂"
                   title="No screenshots in this collection"
-                  subtitle={`Assign screenshots to "${selectedCollection}" from your Library or Home feed.`}
-                  actionLabel="Back to Collections"
-                  onAction={() => setSelectedCollection(null)}
+                  subtitle={`Add screenshots from your library to "${selectedCollection}".`}
+                  actionLabel="+ Add Screenshots"
+                  onAction={() => {
+                    setSelectedScreenshotsToAdd([]);
+                    setShowAddScreenshotsModal(true);
+                  }}
                 />
               ) : (
                 <View style={styles.detailGrid}>
@@ -194,6 +235,34 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
 
             {/* Collections List with Visual Image Thumbnails */}
             <View style={styles.listContainer}>
+              {/* Pinned Private Vault Card */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open Private Vault"
+                onPress={() => setShowVaultModal(true)}
+                style={({ pressed }) => [
+                  styles.vaultPinnedCard,
+                  pressed && { opacity: 0.88, backgroundColor: '#1A232F' },
+                ]}>
+                <View style={styles.vaultThumbWrapper}>
+                  <Lock color="#F59E0B" width={22} height={22} strokeWidth={2.4} />
+                </View>
+                <View style={styles.collectionInfo}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.vaultCardTitle}>Private Vault</Text>
+                    <View style={styles.vaultLockTag}>
+                      <Text style={styles.vaultLockTagText}>BIOMETRIC</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.vaultCount}>
+                    {vaultScreenshots.length > 0
+                      ? `[${vaultScreenshots.length}] items locked`
+                      : 'Locked · Hidden from search'}
+                  </Text>
+                </View>
+                <NavArrowRight color="#F59E0B" width={20} height={20} strokeWidth={2} />
+              </Pressable>
+
               {collectionsData.length === 0 ? (
                 <EmptyState
                   emoji="📁"
@@ -337,6 +406,75 @@ export function CollectionsView({ onTabChange }: CollectionsViewProps) {
           onClose={() => setShowPaywall(false)}
         />
       )}
+
+      {/* Add Screenshots to Collection Modal */}
+      {showAddScreenshotsModal && selectedCollection && (
+        <Modal
+          animationType="slide"
+          visible={showAddScreenshotsModal}
+          onRequestClose={() => setShowAddScreenshotsModal(false)}>
+          <SafeAreaView style={styles.addPickerContainer}>
+            <View style={styles.addPickerHeader}>
+              <Pressable
+                onPress={() => setShowAddScreenshotsModal(false)}
+                style={styles.addPickerBackBtn}>
+                <Text style={styles.addPickerBackText}>Cancel</Text>
+              </Pressable>
+              <Text style={styles.addPickerTitle}>Add to {selectedCollection}</Text>
+              <Pressable
+                disabled={selectedScreenshotsToAdd.length === 0}
+                onPress={handleConfirmAddScreenshots}
+                style={[
+                  styles.addPickerDoneBtn,
+                  selectedScreenshotsToAdd.length === 0 && { opacity: 0.4 },
+                ]}>
+                <Text style={styles.addPickerDoneText}>
+                  Add ({selectedScreenshotsToAdd.length})
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.addPickerGrid}>
+              {screenshots.map((item) => {
+                const isSelected = selectedScreenshotsToAdd.includes(item.id);
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => handleToggleSelectToAdd(item.id)}
+                    style={[
+                      styles.addPickerCard,
+                      isSelected && styles.addPickerCardSelected,
+                    ]}>
+                    <Image
+                      source={{ uri: item.uri }}
+                      style={styles.addPickerImage}
+                      contentFit="cover"
+                    />
+                    <View
+                      style={[
+                        styles.addCheckbox,
+                        isSelected && styles.addCheckboxSelected,
+                      ]}>
+                      {isSelected && (
+                        <Check color="#FFFFFF" width={14} height={14} strokeWidth={3} />
+                      )}
+                    </View>
+                    <Text style={styles.addPickerCardLabel} numberOfLines={1}>
+                      {item.filename}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
+
+      {/* Biometric Private Vault Modal */}
+      <PrivateVaultModal
+        visible={showVaultModal}
+        onClose={() => setShowVaultModal(false)}
+      />
 
       {/* Persistent Bottom Tab Bar */}
       <BottomTabBar
@@ -636,5 +774,153 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  // Detail Title Row & Add Photos Button
+  detailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  addPhotosToColBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  addPhotosToColBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  // Pinned Private Vault Card
+  vaultPinnedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: '#14181F',
+    borderWidth: 1,
+    borderColor: '#263140',
+    marginBottom: 10,
+  },
+  vaultThumbWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#222A35',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  vaultCardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  vaultLockTag: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  vaultLockTagText: {
+    color: '#F59E0B',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  vaultCount: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  // Add Picker Sheet styles
+  addPickerContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  addPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+  },
+  addPickerBackBtn: {
+    padding: 6,
+  },
+  addPickerBackText: {
+    color: BrandColors.muted,
+    fontSize: 15,
+  },
+  addPickerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: BrandColors.ink,
+  },
+  addPickerDoneBtn: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  addPickerDoneText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  addPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 12,
+  },
+  addPickerCard: {
+    width: (SCREEN_WIDTH - 44) / 2,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: BrandColors.paper,
+    position: 'relative',
+  },
+  addPickerCardSelected: {
+    borderColor: BrandColors.primary,
+  },
+  addPickerImage: {
+    width: '100%',
+    height: 120,
+  },
+  addCheckbox: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderWidth: 2,
+    borderColor: BrandColors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addCheckboxSelected: {
+    backgroundColor: BrandColors.primary,
+    borderColor: BrandColors.primary,
+  },
+  addPickerCardLabel: {
+    padding: 8,
+    fontSize: 12,
+    color: BrandColors.ink,
+    fontWeight: '500',
   },
 });
