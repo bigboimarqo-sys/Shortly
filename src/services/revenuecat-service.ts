@@ -376,7 +376,7 @@ class RevenueCatServiceClass {
       providerReference: `rc_${entitlement.identifier}_${entitlement.productIdentifier}`,
       paymentMethod: Platform.OS === 'ios' ? 'apple_pay' : 'google_pay',
       currency: 'ZAR',
-      price: planDetail?.priceAmount || 349,
+      price: planDetail?.priceAmount || 749,
       updatedAt: now,
     };
 

@@ -181,7 +181,7 @@ export function PrivacyPolicyModal({ visible, onClose }: PrivacyPolicyModalProps
 
                 <Text style={styles.sectionHeading}>3. Subscriptions & Payment Information</Text>
                 <Text style={styles.paragraph}>
-                  Shotly offers a Free tier and a Shotly Plus subscription (ZAR R349 / year or R39 / month with a 7-day free trial).
+                  Shotly offers a Free tier and a Shotly Plus subscription (ZAR R749 / year or R69 / month with a 7-day free trial).
                 </Text>
                 <Text style={styles.paragraph}>
                   <Text style={styles.boldText}>We never collect, store, or log card numbers, CVVs, or bank account details.</Text> Payment transactions are executed directly by certified third-party payment gateways (Apple In-App Purchases, Google Play Billing, or PayFast). Shotly only receives an anonymous provider reference and an entitlement token indicating whether your Plus subscription is active.

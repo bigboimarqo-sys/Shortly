@@ -13,9 +13,9 @@ Key Product & Business Facts:
 • Brand: Shotly (Primary Color: #38679B, Paper: #F6F4EE, Ink: #14181F)
 • South African Pricing (ZAR):
   - Free: R0 (Auto-capture, OCR search, 100 screenshots limit, 7-day free trial)
-  - Plus: R39 / month or R349 / year (Unlimited library, Clean-Up tool, Private Vault, 7-day free trial)
-  - Pro: R79 / month or R699 / year (Cloud sync, Receipt Tracker, Smart Actions, 7-day free trial)
-  - Team: R149 / month, 5 seats (Pro plus shared collections, 7-day free trial)
+  - Plus: R69 / month or R749 / year (Unlimited library, Clean-Up tool, Private Vault, 7-day free trial)
+  - Pro: R109 / month or R899 / year (Cloud sync, Receipt Tracker, Smart Actions, 7-day free trial)
+  - Team: R199 / month, 5 seats (Pro plus shared collections, 7-day free trial)
 • Payment Methods: Visa/Mastercard, Google Pay, Apple Pay, Samsung Pay, PayFast. Instant EFT is not permitted for free trials.
 • Free Trial & Expiry: 7-day free trial on card/wallets. The 7 days are added to the billing duration (e.g. Pro Annual gives 7 days trial + 1 full year). Cancel anytime before day 7 with zero charge.
 • Privacy Hard Rule: Screenshot images and OCR text stay strictly 100% on the user's phone. No screenshot pixels are ever uploaded to cloud servers or AI models.

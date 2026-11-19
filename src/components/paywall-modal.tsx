@@ -286,7 +286,7 @@ export function PaywallModal({
         Alert.alert(
           'Purchases Restored',
           `Your Shotly Plus subscription (${
-            res.record.plan === 'plus_annual' ? 'Annual R349' : 'Monthly R39'
+            res.record.plan === 'plus_annual' ? 'Annual R749' : 'Monthly R69'
           } in ZAR) has been verified and restored!`,
           [{ text: 'Awesome', onPress: handleClose }]
         );
@@ -490,7 +490,7 @@ export function PaywallModal({
                     <View style={styles.tableRow}>
                       <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Plus</Text>
                       <Text style={[styles.tableCell, { flex: 1.8 }]}>
-                        R39 / month or{'\n'}R349 / year
+                        R69 / month or{'\n'}R749 / year
                       </Text>
                       <Text style={[styles.tableCell, { flex: 2.6 }]}>
                         Unlimited library, clean-up, Private Vault
@@ -501,7 +501,7 @@ export function PaywallModal({
                     <View style={styles.tableRow}>
                       <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Pro</Text>
                       <Text style={[styles.tableCell, { flex: 1.8 }]}>
-                        R79 / month or{'\n'}R699 / year
+                        R109 / month or{'\n'}R899 / year
                       </Text>
                       <Text style={[styles.tableCell, { flex: 2.6 }]}>
                         Cloud sync, Receipt Tracker, Smart Actions
@@ -512,7 +512,7 @@ export function PaywallModal({
                     <View style={styles.tableRowLast}>
                       <Text style={[styles.tableCellBold, { flex: 1.1 }]}>Team</Text>
                       <Text style={[styles.tableCell, { flex: 1.8 }]}>
-                        R149 / month,{'\n'}5 seats
+                        R199 / month,{'\n'}5 seats
                       </Text>
                       <Text style={[styles.tableCell, { flex: 2.6 }]}>
                         Pro plus shared collections
@@ -531,10 +531,10 @@ export function PaywallModal({
 
                 {/* Plan Selectors matching Paywall.png (Exact ZAR Store Prices) */}
                 <View style={styles.plansContainer}>
-                  {/* Plus Annual: R349 / year in ZAR */}
+                  {/* Plus Annual: R749 / year in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Plus Annual plan R349 per year best value"
+                    accessibilityLabel="Plus Annual plan R749 per year best value"
                     onPress={() => setSelectedPlan('plus_annual')}
                     style={[
                       styles.planCard,
@@ -542,21 +542,21 @@ export function PaywallModal({
                     ]}>
                     <View style={styles.planCardHeader}>
                       <Text style={styles.planName}>Plus Annual</Text>
-                      <Text style={styles.bestValueBadge}>Best value (R29/mo)</Text>
+                      <Text style={styles.bestValueBadge}>Best value (R62/mo)</Text>
                       <View style={styles.trialPillSmall}>
                         <Text style={styles.trialPillSmallText}>7-day trial</Text>
                       </View>
                     </View>
-                    <Text style={styles.planPrice}>R349 / year</Text>
+                    <Text style={styles.planPrice}>R749 / year</Text>
                     <Text style={styles.planIncludesSnippet}>
                       Unlimited library, clean-up & Private Vault
                     </Text>
                   </Pressable>
 
-                  {/* Plus Monthly: R39 / month in ZAR */}
+                  {/* Plus Monthly: R69 / month in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Plus Monthly plan R39 per month"
+                    accessibilityLabel="Plus Monthly plan R69 per month"
                     onPress={() => setSelectedPlan('plus_monthly')}
                     style={[
                       styles.planCard,
@@ -568,16 +568,16 @@ export function PaywallModal({
                         <Text style={styles.trialPillSmallText}>7-day trial</Text>
                       </View>
                     </View>
-                    <Text style={styles.planPrice}>R39 / month</Text>
+                    <Text style={styles.planPrice}>R69 / month</Text>
                     <Text style={styles.planIncludesSnippet}>
                       Unlimited library, clean-up & Private Vault
                     </Text>
                   </Pressable>
 
-                  {/* Pro Annual: R699 / year in ZAR */}
+                  {/* Pro Annual: R899 / year in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Pro Annual plan R699 per year"
+                    accessibilityLabel="Pro Annual plan R899 per year"
                     onPress={() => setSelectedPlan('pro_annual')}
                     style={[
                       styles.planCard,
@@ -585,21 +585,21 @@ export function PaywallModal({
                     ]}>
                     <View style={styles.planCardHeader}>
                       <Text style={styles.planName}>Pro Annual</Text>
-                      <Text style={styles.bestValueBadge}>Save 26% (R58/mo)</Text>
+                      <Text style={styles.bestValueBadge}>Save 31% (R75/mo)</Text>
                       <View style={styles.trialPillSmall}>
                         <Text style={styles.trialPillSmallText}>7-day trial</Text>
                       </View>
                     </View>
-                    <Text style={styles.planPrice}>R699 / year</Text>
+                    <Text style={styles.planPrice}>R899 / year</Text>
                     <Text style={styles.planIncludesSnippet}>
                       Cloud sync, Receipt Tracker & Smart Actions
                     </Text>
                   </Pressable>
 
-                  {/* Pro Monthly: R79 / month in ZAR */}
+                  {/* Pro Monthly: R109 / month in ZAR */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Pro Monthly plan R79 per month"
+                    accessibilityLabel="Pro Monthly plan R109 per month"
                     onPress={() => setSelectedPlan('pro_monthly')}
                     style={[
                       styles.planCard,
@@ -611,16 +611,16 @@ export function PaywallModal({
                         <Text style={styles.trialPillSmallText}>7-day trial</Text>
                       </View>
                     </View>
-                    <Text style={styles.planPrice}>R79 / month</Text>
+                    <Text style={styles.planPrice}>R109 / month</Text>
                     <Text style={styles.planIncludesSnippet}>
                       Cloud sync, Receipt Tracker & Smart Actions
                     </Text>
                   </Pressable>
 
-                  {/* Team Monthly: R149 / month in ZAR (5 seats) */}
+                  {/* Team Monthly: R199 / month in ZAR (5 seats) */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Team Monthly plan R149 per month 5 seats"
+                    accessibilityLabel="Team Monthly plan R199 per month 5 seats"
                     onPress={() => setSelectedPlan('team_monthly')}
                     style={[
                       styles.planCard,
@@ -633,7 +633,7 @@ export function PaywallModal({
                         <Text style={styles.trialPillSmallText}>7-day trial</Text>
                       </View>
                     </View>
-                    <Text style={styles.planPrice}>R149 / month</Text>
+                    <Text style={styles.planPrice}>R199 / month</Text>
                     <Text style={styles.planIncludesSnippet}>
                       Pro features plus shared team collections
                     </Text>
@@ -1196,7 +1196,7 @@ export function PaywallModal({
                   • <Text style={{ fontWeight: '700' }}>7-Day Free Trial:</Text> Your trial starts immediately upon subscribing with a supported Credit/Debit Card, Apple Pay, Google Pay, or Samsung Pay. Instant EFT is not accepted for subscription trials.
                 </Text>
                 <Text style={styles.modalBodyText}>
-                  • <Text style={{ fontWeight: '700' }}>Pricing in ZAR:</Text> After the 7-day trial, your subscription automatically renews at R349.00/year (Annual) or R39.00/month (Monthly) in South African Rand (ZAR) unless cancelled at least 24 hours before the end of the trial period.
+                  • <Text style={{ fontWeight: '700' }}>Pricing in ZAR:</Text> After the 7-day trial, your subscription automatically renews at R749.00/year (Plus Annual), R69.00/month (Plus Monthly), R899.00/year (Pro Annual), R109.00/month (Pro Monthly), or R199.00/month (Team) in South African Rand (ZAR) unless cancelled at least 24 hours before the end of the trial period.
                 </Text>
                 <Text style={styles.modalBodyText}>
                   • <Text style={{ fontWeight: '700' }}>Cancellation:</Text> You can cancel anytime directly via your Google Play Subscriptions or Apple ID Subscription settings. You will retain access until the end of your billing cycle.

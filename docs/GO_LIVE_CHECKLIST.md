@@ -39,11 +39,11 @@ This checklist tracks all credentials, backend proxies, API keys, store configur
 
 ### B. Product & Entitlement IDs (Exact ZAR Pricing)
 Set up these exact product identifiers in App Store Connect & Google Play Console:
-- [ ] **`plus_monthly`**: `R39.00` / month (7-day free trial)
-- [ ] **`plus_annual`**: `R349.00` / year (7-day free trial)
-- [ ] **`pro_monthly`**: `R79.00` / month (7-day free trial)
-- [ ] **`pro_annual`**: `R699.00` / year (7-day free trial)
-- [ ] **`team_monthly`**: `R149.00` / month (5 seats, 7-day free trial)
+- [ ] **`plus_monthly`**: `R69.00` / month (7-day free trial)
+- [ ] **`plus_annual`**: `R749.00` / year (7-day free trial)
+- [ ] **`pro_monthly`**: `R109.00` / month (7-day free trial)
+- [ ] **`pro_annual`**: `R899.00` / year (7-day free trial)
+- [ ] **`team_monthly`**: `R199.00` / month (5 seats, 7-day free trial)
 - [ ] Attach all products to the **`plus`** entitlement in RevenueCat (under *Entitlements* -> `plus`).
 - [ ] Configure Offering: Create an offering named `default` and attach packages for each product.
 
@@ -110,7 +110,7 @@ Set up these exact product identifiers in App Store Connect & Google Play Consol
 
 ## 7. Core MVP Features & Screen Polish (Verified)
 
-- [x] **Paywall**: 7-day free trial, ZAR pricing (Plus R39/mo, R349/yr, Pro R79/mo), RevenueCat fallback, interactive sandbox tester.
+- [x] **Paywall**: 7-day free trial, ZAR pricing (Plus R69/mo, R749/yr, Pro R109/mo, R899/yr, Team R199/mo), RevenueCat fallback, interactive sandbox tester.
 - [x] **Clean-Up Swipe Review**: Tinder-style swipe review (Right = Keep, Left = Delete), OS photo library deletion permission toggle, and real-time MB freed counter.
 - [x] **Native Screenshot Sharing**: Shares actual image files via native share sheet (`expo-sharing` via device cache) with Web Blob download fallback.
 - [x] **Collections & Tags**: 3-collection limit on Free tier, visual image preview covers, custom collection creation, tag filtering.

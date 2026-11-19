@@ -55,8 +55,8 @@ export const SUBSCRIPTION_MODEL: PlanDetails[] = [
     id: 'plus_annual',
     name: 'Plus Annual',
     category: 'Plus',
-    priceZAR: 'R349 / year',
-    priceAmount: 349,
+    priceZAR: 'R749 / year',
+    priceAmount: 749,
     period: 'year',
     includes: 'Unlimited library, clean-up, Private Vault',
     badge: 'Best value',
@@ -68,8 +68,8 @@ export const SUBSCRIPTION_MODEL: PlanDetails[] = [
     id: 'plus_monthly',
     name: 'Plus Monthly',
     category: 'Plus',
-    priceZAR: 'R39 / month',
-    priceAmount: 39,
+    priceZAR: 'R69 / month',
+    priceAmount: 69,
     period: 'month',
     includes: 'Unlimited library, clean-up, Private Vault',
     hasTrial: true,
@@ -80,8 +80,8 @@ export const SUBSCRIPTION_MODEL: PlanDetails[] = [
     id: 'pro_annual',
     name: 'Pro Annual',
     category: 'Pro',
-    priceZAR: 'R699 / year',
-    priceAmount: 699,
+    priceZAR: 'R899 / year',
+    priceAmount: 899,
     period: 'year',
     includes: 'Cloud sync, Receipt Tracker, Smart Actions',
     badge: 'Pro features',
@@ -93,8 +93,8 @@ export const SUBSCRIPTION_MODEL: PlanDetails[] = [
     id: 'pro_monthly',
     name: 'Pro Monthly',
     category: 'Pro',
-    priceZAR: 'R79 / month',
-    priceAmount: 79,
+    priceZAR: 'R109 / month',
+    priceAmount: 109,
     period: 'month',
     includes: 'Cloud sync, Receipt Tracker, Smart Actions',
     hasTrial: true,
@@ -105,8 +105,8 @@ export const SUBSCRIPTION_MODEL: PlanDetails[] = [
     id: 'team_monthly',
     name: 'Team (5 seats)',
     category: 'Team',
-    priceZAR: 'R149 / month',
-    priceAmount: 149,
+    priceZAR: 'R199 / month',
+    priceAmount: 199,
     period: 'month',
     includes: 'Pro plus shared collections (5 seats)',
     badge: 'For teams',
@@ -124,7 +124,7 @@ export interface SubscriptionRecord {
   trialEnd?: number; // Unix timestamp ms (7 days for card/wallet trials)
   paymentMethod?: AllowedPaymentMethod;
   currency: 'ZAR';
-  price: number; // 349, 39, 699, 79, 149 in ZAR
+  price: number; // 749, 69, 899, 109, 199 in ZAR
   updatedAt: number;
 }
 
@@ -164,9 +164,9 @@ export const DEFAULT_FREE_RECORD: SubscriptionRecord = {
  * 
  * Subscription Model:
  * • Free: R0 (Auto-capture, OCR search, 100 screenshots — 7-day free mode)
- * • Plus: R39 / month or R349 / year (Unlimited library, clean-up, Private Vault)
- * • Pro: R79 / month or R699 / year (Cloud sync, Receipt Tracker, Smart Actions)
- * • Team: R149 / month, 5 seats (Pro plus shared collections)
+ * • Plus: R69 / month or R749 / year (Unlimited library, clean-up, Private Vault)
+ * • Pro: R109 / month or R899 / year (Cloud sync, Receipt Tracker, Smart Actions)
+ * • Team: R199 / month, 5 seats (Pro plus shared collections)
  * 7-day free trial on all paid plans (Card, Apple Pay, Google Pay). Instant EFT disallowed.
  */
 export const EntitlementService = {
@@ -386,7 +386,7 @@ export const EntitlementService = {
     const planDetail = SUBSCRIPTION_MODEL.find((p) => p.id === plan);
     const now = Date.now();
     const { trialEnd, expiry } = this.calculateSubscriptionDates(plan, now);
-    const price = planDetail?.priceAmount ?? 349;
+    const price = planDetail?.priceAmount ?? 749;
     const providerReference = `shotly_trial_${plan}_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 7)}`;
@@ -439,7 +439,7 @@ export const EntitlementService = {
               ? 'Google Pay'
               : 'Card'
           }! You won’t be charged today. First billing of ${
-            planDetail?.priceZAR || 'R349 / year'
+            planDetail?.priceZAR || 'R749 / year'
           } is on ${trialEndDateFormatted}. Your subscription will run until ${expiryDateFormatted}. Cancel anytime.`,
         };
       }

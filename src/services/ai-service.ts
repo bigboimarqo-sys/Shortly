@@ -383,7 +383,7 @@ export class AIService {
         const systemPrompt = `You are Marcus, the friendly, empathetic, and knowledgeable 24/7 AI Customer Support Assistant for "Shotly".
 Shotly is an offline-first mobile app for Android and iOS in South Africa that automatically organizes screenshots, reads text on-device with OCR, categorizes screenshots, and makes them instantly searchable.
 Brand: Shotly (Primary Color: #38679B, Paper: #F6F4EE, Ink: #14181F)
-Pricing (ZAR): Free: R0 (100 screenshots limit, 7-day free trial), Plus: R39/mo or R349/yr (Unlimited, Clean-Up, Private Vault), Pro: R79/mo or R699/yr, Team: R149/mo (5 seats).
+Pricing (ZAR): Free: R0 (100 screenshots limit, 7-day free trial), Plus: R69/mo or R749/yr (Unlimited, Clean-Up, Private Vault), Pro: R109/mo or R899/yr, Team: R199/mo (5 seats).
 7-day free trial on card/wallets. Cancel anytime.
 Privacy Hard Rule: Screenshot images and OCR text stay strictly 100% on the user's phone.
 Respond warmly, concisely, and helpfully.
@@ -452,9 +452,9 @@ ACTION_LINK: paywall | settings | permissions | collections | clean_up`;
     if (msg.includes('price') || msg.includes('cost') || msg.includes('zar') || msg.includes('rand') || msg.includes('how much') || msg.includes('plan') || msg.includes('plus') || msg.includes('free') || msg.includes('subscription') || msg.includes('model')) {
       text = `Here is Shotly's full Subscription Model for South Africa (ZAR):
 • Free: R0 (Auto-capture, OCR search, 100 screenshots limit, runs for 7 days)
-• Plus: R39 / month or R349 / year (Unlimited library, clean-up, Private Vault)
-• Pro: R79 / month or R699 / year (Cloud sync, Receipt Tracker, Smart Actions)
-• Team: R149 / month, 5 seats (Pro plus shared collections)
+• Plus: R69 / month or R749 / year (Unlimited library, clean-up, Private Vault)
+• Pro: R109 / month or R899 / year (Cloud sync, Receipt Tracker, Smart Actions)
+• Team: R199 / month, 5 seats (Pro plus shared collections)
 
 All paid plans include a 7-day free trial on Card (Visa/Mastercard) and digital wallets (Apple Pay, Google Pay, Samsung Pay). Cancel anytime!`;
       actionLink = { type: 'paywall', label: 'View Subscription Model' };
@@ -464,7 +464,7 @@ All paid plans include a 7-day free trial on Card (Visa/Mastercard) and digital 
       text = `Here is how trials and billing durations work on Shotly:
 • Free Mode: The Free plan runs for 7 days with a limit of 100 screenshots.
 • Paid Plans Trial: 7-day free trial on Plus, Pro, and Team plans with full features.
-• Full Duration Added: When you start an annual or monthly subscription, your 7-day free trial is added to the full billing period. For example, subscribing to Pro Annual (R699/year) gives you 7 days trial + 1 full year (expiring exactly 1 year after the trial ends, e.g., 30 October 2027). For monthly plans, it is 7 days trial + 1 month.
+• Full Duration Added: When you start an annual or monthly subscription, your 7-day free trial is added to the full billing period. For example, subscribing to Pro Annual (R899/year) gives you 7 days trial + 1 full year (expiring exactly 1 year after the trial ends, e.g., 30 October 2027). For monthly plans, it is 7 days trial + 1 month.
 • You won't be charged today. First billing occurs on day 7, and you can cancel anytime before then with zero penalty.`;
       actionLink = { type: 'settings', label: 'Manage Subscription in Settings' };
     }
@@ -526,7 +526,7 @@ Note: Instant EFT is not supported for free trials.`;
 I'm built right into the app to help you:
 • Search & understand your screenshots using on-device OCR
 • Answer questions about receipts, documents, and OTPs
-• Guide you with subscription plans in ZAR (R349/year, R39/month)
+• Guide you with subscription plans in ZAR (R749/year, R69/month)
 • Safeguard your 100% on-device privacy guarantee
 
 How can I help you today?`;
@@ -535,7 +535,7 @@ How can I help you today?`;
     else {
       text = `Hello! I'm Marcus, your Shotly 24/7 AI Support Assistant. 
 I can help you with:
-• Subscription plans & 7-day free trial (R349/year, R39/month in ZAR)
+• Subscription plans & 7-day free trial (R749/year, R69/month in ZAR)
 • On-device OCR text search & AI screenshot queries
 • Photo & storage permissions troubleshooting
 • Privacy guarantees & zero cloud storage
